@@ -27,3 +27,5 @@ func TestMarkSameSet(t *testing.T) {
 
 	// TODO recognizes links in set
 }
+
+// TODO add other tests

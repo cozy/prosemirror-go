@@ -13,3 +13,5 @@ type MarkType struct {
 func (mt *MarkType) Excludes(other *MarkType) bool {
 	return false // TODO
 }
+
+// TODO
