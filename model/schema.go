@@ -1,3 +1,5 @@
+// Package model implements ProseMirror's document model, along with the
+// mechanisms needed to support schemas.
 package model
 
 import (

@@ -1,8 +1,9 @@
-package model
+package model_test
 
 import (
 	"testing"
 
+	. "github.com/cozy/prosemirror-go/model"
 	"github.com/stretchr/testify/assert"
 )
 
