@@ -14,6 +14,23 @@ custom document schemas. This repository contains a port in Go of
 [prosemirror-transform](https://github.com/ProseMirror/prosemirror-transform/)
 in order to have the server part of the collaborative editing in Go.
 
+## Limitations
+
+1. Only the code necessary for writing a server for collaborative editing will
+   be ported, not things like translating a document to/from a DOM
+   representation which are only useful on the clients.
+
+2. In go, the `map`s don't preserve the order of the key. `OrderedMap` in the
+   JS `schema` needs to be serialized in JSON to an array of tuples `[key,
+   value]` to keep the order:
+
+```json
+[
+  ["em", { "inclusive": true, "group": "fontStyle" }],
+  ["strong", { "inclusive": true, "group": "fontStyle" }]
+]
+```
+
 ## License
 
 The port in Go of ProseMirror has been developed by Cozy Cloud and is
