@@ -31,6 +31,30 @@ func NewNodeType(name string, schema *Schema, spec *NodeSpec) *NodeType {
 	}
 }
 
+// True if this is the text node type.
+func (nt *NodeType) IsText() bool {
+	return nt.Name == "text"
+}
+
+func (nt *NodeType) computeAttrs(attrs map[string]interface{}) map[string]interface{} {
+	return attrs // TODO
+}
+
+// Create a Node of this type. The given attributes are checked and defaulted
+// (you can pass null to use the type's defaults entirely, if no required
+// attributes exist). content may be a Fragment, a node, an array of nodes, or
+// null. Similarly marks may be null to default to the empty set of marks.
+func (nt *NodeType) Create(attrs map[string]interface{}, content interface{}, marks []*Mark) (*Node, error) {
+	if nt.IsText() {
+		return nil, errors.New("NodeType.create can't construct text nodes")
+	}
+	fragment, err := FragmentFrom(content)
+	if err != nil {
+		return nil, err
+	}
+	return NewNode(nt, nt.computeAttrs(attrs), fragment, MarkSetFrom(marks)), nil
+}
+
 func compileNodeType(nodes []*NodeSpec, schema *Schema) (map[string]*NodeType, error) {
 	result := make(map[string]*NodeType)
 	for _, n := range nodes {
@@ -73,6 +97,14 @@ func NewMarkType(name string, rank int, schema *Schema, spec *MarkSpec) *MarkTyp
 		Spec:   spec,
 		// TODO attrs, excluded, instance
 	}
+}
+
+// Create a mark of this type. attrs may be null or an object containing only
+// some of the mark's attributes. The others, if they have defaults, will be
+// added.
+func (mt *MarkType) Create(attrs map[string]interface{}) *Mark {
+	// TODO if (!attrs && this.instance) return this.instance
+	return NewMark(mt, attrs) // TODO computeAttrs
 }
 
 func compileMarkType(marks []*MarkSpec, schema *Schema) map[string]*MarkType {

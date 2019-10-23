@@ -41,3 +41,20 @@ func (f *Fragment) FindDiffEnd(other *Fragment, posA, posB int) *DiffEnd {
 }
 
 // TODO
+
+// Create a fragment from something that can be interpreted as a set of nodes.
+// For null, it returns the empty fragment. For a fragment, the fragment
+// itself. For a node or array of nodes, a fragment containing those nodes.
+func FragmentFrom(nodes interface{}) (*Fragment, error) {
+	if nodes == nil {
+		return EmptyFragment, nil
+	}
+	switch nodes := nodes.(type) {
+	case *Fragment:
+		return nodes, nil
+		// TODO
+	}
+	return nil, fmt.Errorf("Can not convert %v to a Fragment", nodes)
+}
+
+var EmptyFragment = &Fragment{Content: nil, Size: 0}

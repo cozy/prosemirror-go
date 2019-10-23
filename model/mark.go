@@ -1,5 +1,7 @@
 package model
 
+import "reflect"
+
 // A mark is a piece of information that can be attached to a node, such as it
 // being emphasized, in code font, or a link. It has a type and optionally a
 // set of attributes that provide further information (such as the target of
@@ -7,7 +9,11 @@ package model
 // exist and which attributes they have.
 type Mark struct {
 	Type  *MarkType
-	Attrs map[string]string
+	Attrs map[string]interface{}
+}
+
+func NewMark(typ *MarkType, attrs map[string]interface{}) *Mark {
+	return &Mark{Type: typ, Attrs: attrs}
 }
 
 // Given a set of marks, create a new set which contains this one as well, in
@@ -86,13 +92,7 @@ func (m *Mark) Eq(other *Mark) bool {
 	if len(m.Attrs) != len(other.Attrs) {
 		return false
 	}
-	// TODO use reflect.DeepEqual?
-	for k, v := range m.Attrs {
-		if other.Attrs[k] != v {
-			return false
-		}
-	}
-	return true
+	return reflect.DeepEqual(m.Attrs, other.Attrs)
 }
 
 // TODO Marshal and Unmarshal JSON

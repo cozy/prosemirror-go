@@ -16,6 +16,10 @@ type Node struct {
 	Content *Fragment
 }
 
+func NewNode(typ *NodeType, attrs map[string]interface{}, content *Fragment, marks []*Mark) *Node {
+	return &Node{Content: content} // TODO
+}
+
 // The size of this node, as defined by the integer-based indexing scheme. For
 // text nodes, this is the amount of characters. For other leaf nodes, it is
 // one. For non-leaf nodes, it is the size of the content plus two (the start
