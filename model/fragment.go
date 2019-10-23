@@ -26,4 +26,18 @@ func (f *Fragment) Child(index int) *Node {
 	return f.Content[index]
 }
 
+// Find the first position at which this fragment and another fragment differ,
+// or `null` if they are the same.
+func (f *Fragment) FindDiffStart(other *Fragment, pos int) *int {
+	return findDiffStart(f, other, pos)
+}
+
+// Find the first position, searching from the end, at which this fragment and
+// the given fragment differ, or `null` if they are the same. Since this
+// position will not be the same in both nodes, an object with two separate
+// positions is returned.
+func (f *Fragment) FindDiffEnd(other *Fragment, posA, posB int) *DiffEnd {
+	return findDiffEnd(f, other, posA, posB)
+}
+
 // TODO

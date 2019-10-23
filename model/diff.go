@@ -38,16 +38,16 @@ func findDiffStart(a, b *Fragment, pos int) *int {
 	}
 }
 
-// diffEnd is the result of findDiffEnd with the positions in both a and b
+// DiffEnd is the result of findDiffEnd with the positions in both a and b
 // fragments.
-type diffEnd struct {
+type DiffEnd struct {
 	A int
 	B int
 }
 
 // findDiffEnd returns the last position where the two fragments have not
 // the same content.
-func findDiffEnd(a, b *Fragment, posA, posB int) *diffEnd {
+func findDiffEnd(a, b *Fragment, posA, posB int) *DiffEnd {
 	ia := a.ChildCount()
 	ib := b.ChildCount()
 	for {
@@ -55,7 +55,7 @@ func findDiffEnd(a, b *Fragment, posA, posB int) *diffEnd {
 			if ia == ib {
 				return nil
 			}
-			return &diffEnd{A: posA, B: posB}
+			return &DiffEnd{A: posA, B: posB}
 		}
 
 		ia--
@@ -70,7 +70,7 @@ func findDiffEnd(a, b *Fragment, posA, posB int) *diffEnd {
 		}
 
 		if !childA.SameMarkup(childB) {
-			return &diffEnd{A: posA, B: posB}
+			return &DiffEnd{A: posA, B: posB}
 		}
 
 		if childA.IsText() && childA.Text() != childB.Text() {
@@ -86,7 +86,7 @@ func findDiffEnd(a, b *Fragment, posA, posB int) *diffEnd {
 				posA--
 				posB--
 			}
-			return &diffEnd{A: posA, B: posB}
+			return &DiffEnd{A: posA, B: posB}
 		}
 		if childA.Content.Size > 0 || childB.Content.Size > 0 {
 			inner := findDiffEnd(childA.Content, childB.Content, posA-1, posB-1)

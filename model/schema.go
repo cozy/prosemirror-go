@@ -58,7 +58,8 @@ type MarkType struct {
 	// The schema that this mark type instance is part of.
 	Schema *Schema
 	// The spec on which the type is based.
-	Spec *MarkSpec
+	Spec     *MarkSpec
+	Excluded []*MarkType
 	// TODO
 }
 
@@ -82,7 +83,15 @@ func compileMarkType(marks []*MarkSpec, schema *Schema) map[string]*MarkType {
 
 // Queries whether a given mark type is excluded by this one.
 func (mt *MarkType) Excludes(other *MarkType) bool {
-	return false // TODO
+	if len(mt.Excluded) == 0 {
+		return false
+	}
+	for _, ex := range mt.Excluded {
+		if other == ex {
+			return true
+		}
+	}
+	return false
 }
 
 // TODO add other methods to MarkType
@@ -160,7 +169,7 @@ type MarkSpec struct {
 	// set it to an empty string (or any string not containing the mark's own
 	// name) to allow multiple marks of a given type to coexist (as long as
 	// they have different attributes).
-	Excludes string
+	Excludes *string
 
 	// The group or space-separated groups to which this mark belongs.
 	Group string
@@ -203,6 +212,20 @@ func NewSchema(spec *SchemaSpec) (*Schema, error) {
 	schema.Nodes = nodes
 	schema.Marks = compileMarkType(spec.Marks, &schema)
 	// TODO
+	for _, typ := range schema.Marks {
+		excl := typ.Spec.Excludes
+		if excl == nil {
+			typ.Excluded = []*MarkType{typ}
+		} else if *excl == "" {
+			typ.Excluded = []*MarkType{}
+		} else {
+			gathered, err := gatherMarks(&schema, strings.Fields(*excl))
+			if err != nil {
+				return nil, err
+			}
+			typ.Excluded = gathered
+		}
+	}
 	if spec.TopNode == "" {
 		spec.TopNode = "doc"
 	}
