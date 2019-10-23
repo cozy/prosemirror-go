@@ -1,8 +1,8 @@
 package model
 
-// FindDiffStart returns the first position where the two fragments have not
+// findDiffStart returns the first position where the two fragments have not
 // the same content.
-func FindDiffStart(a, b *Fragment, pos int) *int {
+func findDiffStart(a, b *Fragment, pos int) *int {
 	for i := 0; ; i++ {
 		if i == a.ChildCount() || i == b.ChildCount() {
 			if a.ChildCount() == b.ChildCount() {
@@ -29,7 +29,7 @@ func FindDiffStart(a, b *Fragment, pos int) *int {
 			return &pos
 		}
 		if childA.Content.Size > 0 || childB.Content.Size > 0 {
-			inner := FindDiffStart(childA.Content, childB.Content, pos+1)
+			inner := findDiffStart(childA.Content, childB.Content, pos+1)
 			if inner != nil {
 				return inner
 			}
@@ -38,16 +38,16 @@ func FindDiffStart(a, b *Fragment, pos int) *int {
 	}
 }
 
-// DiffEnd is the result of FindDiffEnd with the positions in both a and b
+// diffEnd is the result of findDiffEnd with the positions in both a and b
 // fragments.
-type DiffEnd struct {
+type diffEnd struct {
 	A int
 	B int
 }
 
-// FindDiffEnd returns the last position where the two fragments have not
+// findDiffEnd returns the last position where the two fragments have not
 // the same content.
-func FindDiffEnd(a, b *Fragment, posA, posB int) *DiffEnd {
+func findDiffEnd(a, b *Fragment, posA, posB int) *diffEnd {
 	ia := a.ChildCount()
 	ib := b.ChildCount()
 	for {
@@ -55,7 +55,7 @@ func FindDiffEnd(a, b *Fragment, posA, posB int) *DiffEnd {
 			if ia == ib {
 				return nil
 			}
-			return &DiffEnd{A: posA, B: posB}
+			return &diffEnd{A: posA, B: posB}
 		}
 
 		ia--
@@ -70,7 +70,7 @@ func FindDiffEnd(a, b *Fragment, posA, posB int) *DiffEnd {
 		}
 
 		if !childA.SameMarkup(childB) {
-			return &DiffEnd{A: posA, B: posB}
+			return &diffEnd{A: posA, B: posB}
 		}
 
 		if childA.IsText() && childA.Text() != childB.Text() {
@@ -86,10 +86,10 @@ func FindDiffEnd(a, b *Fragment, posA, posB int) *DiffEnd {
 				posA--
 				posB--
 			}
-			return &DiffEnd{A: posA, B: posB}
+			return &diffEnd{A: posA, B: posB}
 		}
 		if childA.Content.Size > 0 || childB.Content.Size > 0 {
-			inner := FindDiffEnd(childA.Content, childB.Content, posA-1, posB-1)
+			inner := findDiffEnd(childA.Content, childB.Content, posA-1, posB-1)
 			if inner != nil {
 				return inner
 			}

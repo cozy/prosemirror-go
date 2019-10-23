@@ -1,18 +1,91 @@
 package model
 
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
+
+// Node types are objects allocated once per Schema and used to tag Node
+// instances. They contain information about the node type, such as its name
+// and what kind of node it represents.
+type NodeType struct {
+	// The name the node type has in this schema.
+	Name string
+	// A link back to the `Schema` the node type belongs to.
+	Schema *Schema
+	// The spec that this type is based on
+	Spec  *NodeSpec
+	Attrs map[string]interface{}
+	// TODO
+}
+
+func NewNodeType(name string, schema *Schema, spec *NodeSpec) *NodeType {
+	return &NodeType{
+		Name:   name,
+		Schema: schema,
+		Spec:   spec,
+		// TODO
+	}
+}
+
+func compileNodeType(nodes []*NodeSpec, schema *Schema) (map[string]*NodeType, error) {
+	result := make(map[string]*NodeType)
+	for _, n := range nodes {
+		result[n.Key] = NewNodeType(n.Key, schema, n)
+	}
+	topType := schema.Spec.TopNode
+	if _, ok := result[topType]; !ok {
+		return nil, fmt.Errorf("The schema is missing its top node type (%s)", topType)
+	}
+	txt, ok := result["text"]
+	if !ok {
+		return nil, errors.New("Every schema needs a 'text' type")
+	}
+	if len(txt.Attrs) > 0 {
+		return nil, errors.New("The text node type should not have attributes")
+	}
+	return result, nil
+}
+
 // Like nodes, marks (which are associated with nodes to signify things like
 // emphasis or being part of a link) are tagged with type objects, which are
 // instantiated once per Schema.
 type MarkType struct {
+	// The name of the mark type.
 	Name string
 	Rank int
+	// The schema that this mark type instance is part of.
+	Schema *Schema
+	// The spec on which the type is based.
+	Spec *MarkSpec
 	// TODO
+}
+
+func NewMarkType(name string, rank int, schema *Schema, spec *MarkSpec) *MarkType {
+	return &MarkType{
+		Name:   name,
+		Rank:   rank,
+		Schema: schema,
+		Spec:   spec,
+		// TODO attrs, excluded, instance
+	}
+}
+
+func compileMarkType(marks []*MarkSpec, schema *Schema) map[string]*MarkType {
+	result := make(map[string]*MarkType)
+	for i, m := range marks {
+		result[m.Key] = NewMarkType(m.Key, i, schema, m)
+	}
+	return result
 }
 
 // Queries whether a given mark type is excluded by this one.
 func (mt *MarkType) Excludes(other *MarkType) bool {
 	return false // TODO
 }
+
+// TODO add other methods to MarkType
 
 // An object describing a schema, as passed to the Schema constructor.
 type SchemaSpec struct {
@@ -62,6 +135,11 @@ type NodeSpec struct {
 }
 
 type MarkSpec struct {
+	// In JavaScript, the MarkSpec are kept in an OrderedMap. In Go, the map
+	// doesn't preserve the order of the keys. Instead, an array is used, and
+	// the key is kept here.
+	Key string
+
 	// The attributes that marks of this type get.
 	Attrs map[string]*AttributeSpec
 
@@ -98,4 +176,65 @@ type AttributeSpec struct {
 	Default interface{}
 }
 
-// TODO
+// A document schema. Holds node and mark type objects for the nodes and marks
+// that may occur in conforming documents, and provides functionality for
+// creating and deserializing such documents.
+type Schema struct {
+	// The spec on which the schema is based.
+	Spec *SchemaSpec
+
+	// An object mapping the schema's node names to node type objects.
+	Nodes map[string]*NodeType
+
+	// A map from mark names to mark type objects.
+	Marks map[string]*MarkType
+}
+
+// Construct a schema from a schema specification.
+// TODO should it take a SchemaSpec or a map[string]interface{} for spec parameter?
+func NewSchema(spec *SchemaSpec) (*Schema, error) {
+	schema := Schema{
+		Spec: spec,
+	}
+	nodes, err := compileNodeType(spec.Nodes, &schema)
+	if err != nil {
+		return nil, err
+	}
+	schema.Nodes = nodes
+	schema.Marks = compileMarkType(spec.Marks, &schema)
+	// TODO
+	if spec.TopNode == "" {
+		spec.TopNode = "doc"
+	}
+	return &schema, nil
+}
+
+func gatherMarks(schema *Schema, marks []string) ([]*MarkType, error) {
+	var found []*MarkType
+	for _, name := range marks {
+		mark, ok := schema.Marks[name]
+		if ok {
+			found = append(found, mark)
+		} else {
+			for _, mark = range schema.Marks {
+				if name == "_" || hasGroup(mark.Spec.Group, name) {
+					found = append(found, mark)
+					ok = true
+				}
+			}
+		}
+		if !ok {
+			return nil, fmt.Errorf("Unknown mark type: %s", name)
+		}
+	}
+	return found, nil
+}
+
+func hasGroup(groups, group string) bool {
+	for _, g := range strings.Fields(groups) {
+		if g == group {
+			return true
+		}
+	}
+	return false
+}
