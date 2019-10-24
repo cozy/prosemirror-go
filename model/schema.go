@@ -249,6 +249,9 @@ func NewSchema(spec *SchemaSpec) (*Schema, error) {
 	schema := Schema{
 		Spec: spec,
 	}
+	if spec.TopNode == "" {
+		spec.TopNode = "doc"
+	}
 	nodes, err := compileNodeType(spec.Nodes, &schema)
 	if err != nil {
 		return nil, err
@@ -270,10 +273,23 @@ func NewSchema(spec *SchemaSpec) (*Schema, error) {
 			typ.Excluded = gathered
 		}
 	}
-	if spec.TopNode == "" {
-		spec.TopNode = "doc"
-	}
 	return &schema, nil
+}
+
+// Create a mark with the given type and attributes.
+func (s *Schema) Mark(typ interface{}, args ...map[string]interface{}) *Mark {
+	var t *MarkType
+	switch typ := typ.(type) {
+	case *MarkType:
+		t = typ
+	case string:
+		t = s.Marks[typ]
+	}
+	var attrs map[string]interface{}
+	if len(args) > 0 {
+		attrs = args[0]
+	}
+	return t.Create(attrs)
 }
 
 func gatherMarks(schema *Schema, marks []string) ([]*MarkType, error) {

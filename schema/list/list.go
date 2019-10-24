@@ -10,16 +10,21 @@ var (
 	// determines the number at which the list starts counting, and defaults to
 	// 1. Represented as an <ol> element.
 	orderedList = model.NodeSpec{
+		Key: "ordered_list",
 		Attrs: map[string]*model.AttributeSpec{
 			"order": {Default: 1},
 		},
 	}
 
 	// A bullet list node spec, represented in the DOM as <ul>.
-	bulletList = model.NodeSpec{}
+	bulletList = model.NodeSpec{
+		Key: "bullet_list",
+	}
 
 	// A list item (<li>) spec.
-	listItem = model.NodeSpec{}
+	listItem = model.NodeSpec{
+		Key: "list_item",
+	}
 )
 
 func add(obj, props model.NodeSpec) *model.NodeSpec {

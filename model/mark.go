@@ -1,6 +1,8 @@
 package model
 
-import "reflect"
+import (
+	"reflect"
+)
 
 // A mark is a piece of information that can be attached to a node, such as it
 // being emphasized, in code font, or a link. It has a type and optionally a
@@ -29,7 +31,7 @@ func (m *Mark) AddToSet(set []*Mark) []*Mark {
 		}
 		if m.Type.Excludes(other.Type) {
 			if cpy == nil {
-				cpy := make([]*Mark, i)
+				cpy = make([]*Mark, i)
 				copy(cpy, set[:i])
 			}
 		} else if other.Type.Excludes(m.Type) {
@@ -37,19 +39,19 @@ func (m *Mark) AddToSet(set []*Mark) []*Mark {
 		} else {
 			if !placed && other.Type.Rank > m.Type.Rank {
 				if cpy == nil {
-					cpy := make([]*Mark, i)
+					cpy = make([]*Mark, i)
 					copy(cpy, set[:i])
 				}
 				cpy = append(cpy, m)
 				placed = true
 			}
 			if cpy != nil {
-				cpy = append(cpy, other)
+				cpy = append(cpy, set[i])
 			}
 		}
 	}
 	if cpy == nil {
-		cpy := make([]*Mark, len(set))
+		cpy = make([]*Mark, len(set))
 		copy(cpy, set)
 	}
 	if !placed {
