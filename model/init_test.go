@@ -10,8 +10,10 @@ var (
 	doc        = builder.Doc
 	blockquote = builder.Blockquote
 	h1         = builder.H1
+	h2         = builder.H2
 	p          = builder.P
 	em         = builder.Em
+	strong     = builder.Strong
 
 	strong2 = schema.Mark("strong")
 	em2     = schema.Mark("em")

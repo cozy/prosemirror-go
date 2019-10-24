@@ -53,7 +53,15 @@ func (f *Fragment) FindDiffStart(other *Fragment, pos ...int) *int {
 // the given fragment differ, or `null` if they are the same. Since this
 // position will not be the same in both nodes, an object with two separate
 // positions is returned.
-func (f *Fragment) FindDiffEnd(other *Fragment, posA, posB int) *DiffEnd {
+func (f *Fragment) FindDiffEnd(other *Fragment, pos ...int) *DiffEnd {
+	posA := f.Size
+	posB := other.Size
+	if len(pos) > 0 {
+		posA = pos[0]
+	}
+	if len(pos) > 1 {
+		posB = pos[1]
+	}
 	return findDiffEnd(f, other, posA, posB)
 }
 

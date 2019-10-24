@@ -276,6 +276,16 @@ func NewSchema(spec *SchemaSpec) (*Schema, error) {
 	return &schema, nil
 }
 
+// Create a text node in the schema. Empty text nodes are not allowed.
+func (s *Schema) Text(text string, marks ...[]*Mark) *Node {
+	typ := s.Nodes["text"]
+	set := NoMarks
+	if len(marks) > 0 {
+		set = MarkSetFrom(marks[0])
+	}
+	return NewTextNode(typ, nil, text, set) // TODO type.defaultAttrs instead of nil
+}
+
 // Create a mark with the given type and attributes.
 func (s *Schema) Mark(typ interface{}, args ...map[string]interface{}) *Mark {
 	var t *MarkType

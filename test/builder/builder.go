@@ -98,7 +98,27 @@ func flatten(schema *model.Schema, children []interface{}, f nodeMapper) Result 
 
 		switch child := child.(type) {
 		case string:
-			// TODO
+			at := 0
+			out := ""
+			for i, c := range child { // i == m.index
+				if c != '<' {
+					continue
+				}
+				for j, c := range child[i:] { // j == m[0].length
+					if c == '>' {
+						out += child[at:i]
+						pos += i - at
+						at = i + j
+						tag[child[i+1:i+j]] = pos
+						break
+					}
+				}
+			}
+			out += child[at:]
+			pos += len(child) - at
+			if len(out) > 0 {
+				result = append(result, f(schema.Text(out)))
+			}
 		case NodeWithTag:
 			node := f(child.Node)
 			pos += node.NodeSize()

@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"reflect"
 )
 
@@ -127,18 +128,21 @@ func SameMarkSet(a, b []*Mark) bool {
 
 // Create a properly sorted mark set from null, a single mark, or an unsorted
 // array of marks.
-func MarkSetFrom(marks []*Mark) []*Mark {
+func MarkSetFrom(marks ...interface{}) []*Mark {
 	if len(marks) == 0 {
-		return none
+		return NoMarks
 	}
-	if len(marks) == 1 {
-		return marks
+	if mark, ok := marks[0].(*Mark); ok {
+		return []*Mark{mark}
 	}
-	set := make([]*Mark, len(marks))
-	copy(set, marks)
-	return set
+	if marks, ok := marks[0].([]*Mark); ok {
+		set := make([]*Mark, len(marks))
+		copy(set, marks)
+		// TODO copy.sort((a, b) => a.type.rank - b.type.rank)
+		return set
+	}
+	panic(fmt.Errorf("Unexpected marks for MarkSetFrom: %#v", marks))
 }
 
-// The empty set of marks.
-// TODO export it? with which name?
-var none = []*Mark{}
+// The empty set of marks (none in JS)
+var NoMarks = []*Mark{}

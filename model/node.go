@@ -12,8 +12,9 @@ package model
 //
 // Do not directly mutate the properties of a Node object.
 type Node struct {
-	// TODO it should probably be an interface
+	// TODO
 	Content *Fragment
+	Text    string
 	Type    *NodeType
 	Marks   []*Mark
 }
@@ -45,13 +46,13 @@ func (n *Node) Mark(marks []*Mark) *Node {
 	return NewNode(n.Type, nil, n.Content, marks) // TODO attrs
 }
 
-// True when this is a text node.
-func (n *Node) IsText() bool {
-	return false // TODO
+func NewTextNode(typ *NodeType, attrs map[string]interface{}, text string, marks []*Mark) *Node {
+	return &Node{Type: typ, Text: text, Marks: marks} // TODO attrs
 }
 
-func (n *Node) Text() string {
-	return "" // TODO
+// True when this is a text node.
+func (n *Node) IsText() bool {
+	return n.Content == nil
 }
 
 // TODO
