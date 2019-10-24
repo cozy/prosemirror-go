@@ -56,7 +56,7 @@ func (nt *NodeType) Create(attrs map[string]interface{}, content interface{}, ma
 }
 
 func compileNodeType(nodes []*NodeSpec, schema *Schema) (map[string]*NodeType, error) {
-	result := make(map[string]*NodeType)
+	result := map[string]*NodeType{}
 	for _, n := range nodes {
 		result[n.Key] = NewNodeType(n.Key, schema, n)
 	}
@@ -108,11 +108,21 @@ func (mt *MarkType) Create(attrs map[string]interface{}) *Mark {
 }
 
 func compileMarkType(marks []*MarkSpec, schema *Schema) map[string]*MarkType {
-	result := make(map[string]*MarkType)
+	result := map[string]*MarkType{}
 	for i, m := range marks {
 		result[m.Key] = NewMarkType(m.Key, i, schema, m)
 	}
 	return result
+}
+
+// Tests whether there is a mark of this type in the given set.
+func (mt *MarkType) IsInSet(set []*Mark) *Mark {
+	for _, mark := range set {
+		if mark.Type == mt {
+			return mark
+		}
+	}
+	return nil
 }
 
 // Queries whether a given mark type is excluded by this one.

@@ -14,10 +14,12 @@ package model
 type Node struct {
 	// TODO it should probably be an interface
 	Content *Fragment
+	Type    *NodeType
+	Marks   []*Mark
 }
 
 func NewNode(typ *NodeType, attrs map[string]interface{}, content *Fragment, marks []*Mark) *Node {
-	return &Node{Content: content} // TODO
+	return &Node{Type: typ, Content: content, Marks: marks} // TODO attrs
 }
 
 // The size of this node, as defined by the integer-based indexing scheme. For
@@ -32,6 +34,15 @@ func (n *Node) NodeSize() int {
 // another. Returns true if both have the same markup.
 func (n *Node) SameMarkup(other *Node) bool {
 	return false // TODO
+}
+
+// Create a copy of this node, with the given set of marks instead of the
+// node's own marks.
+func (n *Node) Mark(marks []*Mark) *Node {
+	if sameMarks(n.Marks, marks) {
+		return n
+	}
+	return NewNode(n.Type, nil, n.Content, marks) // TODO attrs
 }
 
 // True when this is a text node.

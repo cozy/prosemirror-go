@@ -97,6 +97,18 @@ func (m *Mark) Eq(other *Mark) bool {
 
 // TODO Marshal and Unmarshal JSON
 
+func sameMarks(a, b []*Mark) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // Test whether two sets of marks are identical.
 func SameMarkSet(a, b []*Mark) bool {
 	if len(a) != len(b) {
