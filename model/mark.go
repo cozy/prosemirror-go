@@ -68,6 +68,7 @@ func (m *Mark) RemoveFromSet(set []*Mark) []*Mark {
 			cpy := make([]*Mark, len(set)-1)
 			copy(cpy[:i], set[:i])
 			copy(cpy[i:], set[i+1:])
+			return cpy
 		}
 	}
 	return set

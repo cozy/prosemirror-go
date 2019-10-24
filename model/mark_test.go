@@ -134,3 +134,29 @@ func TestMarkAddToSet(t *testing.T) {
 	// remove excluded marks when adding a mark
 	// ist(customStrong.addToSet([remark1, customEm]), [remark1, customStrong], Mark.sameSet))
 }
+
+func TestMarkRemoveFromSet(t *testing.T) {
+	// is a no-op for the empty set
+	assert.True(t, SameMarkSet(em2.RemoveFromSet([]*Mark{}), []*Mark{}))
+
+	// can remove the last mark from a set
+	assert.True(t, SameMarkSet(em2.RemoveFromSet([]*Mark{em2}), []*Mark{}))
+
+	// is a no-op when the mark isn't in the set
+	assert.True(t, SameMarkSet(strong.RemoveFromSet([]*Mark{em2}), []*Mark{em2}))
+
+	// can remove a mark with attributes
+	assert.True(t, SameMarkSet(
+		link("http://foo").RemoveFromSet([]*Mark{link("http://foo")}),
+		[]*Mark{},
+	))
+
+	// doesn't remove a mark when its attrs differ
+	// can remove a mark with attributes
+	assert.True(t, SameMarkSet(
+		link("http://foo", "title").RemoveFromSet([]*Mark{link("http://foo")}),
+		[]*Mark{link("http://foo")},
+	))
+}
+
+// TODO ResolvedPos.marks
