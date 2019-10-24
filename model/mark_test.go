@@ -4,57 +4,7 @@ import (
 	"testing"
 
 	. "github.com/cozy/prosemirror-go/model"
-	"github.com/cozy/prosemirror-go/test/builder"
 	"github.com/stretchr/testify/assert"
-)
-
-var (
-	schema = builder.Schema
-	// doc    = builder.Doc
-	// p      = builder.P
-	// em     = builder.Em
-	// a      = builder.A
-
-	strong = schema.Mark("strong")
-	em2    = schema.Mark("em")
-	code   = schema.Mark("code")
-	link   = func(href string, title ...string) *Mark {
-		attrs := map[string]interface{}{"href": href}
-		if len(title) > 0 {
-			attrs["title"] = title[0]
-		}
-		return schema.Mark("link", attrs)
-	}
-
-	empty      = ""
-	underscore = "_"
-	falsy      = false
-	emGroup    = "em-group"
-	idAttrs    = map[string]*AttributeSpec{
-		"id": &AttributeSpec{},
-	}
-
-	customSchema, _ = NewSchema(&SchemaSpec{
-		Nodes: []*NodeSpec{
-			{Key: "doc", Content: "paragraph+"},
-			{Key: "paragraph", Content: "text*"},
-			{Key: "text"},
-		},
-		Marks: []*MarkSpec{
-			{Key: "remark", Attrs: idAttrs, Excludes: &empty, Inclusive: &falsy},
-			{Key: "user", Attrs: idAttrs, Excludes: &underscore},
-			{Key: "strong", Excludes: &emGroup},
-			{Key: "em", Group: emGroup},
-		},
-	})
-	custom = customSchema.Marks
-
-	remark1      = custom["remark"].Create(map[string]interface{}{"id": 1})
-	remark2      = custom["remark"].Create(map[string]interface{}{"id": 2})
-	user1        = custom["user"].Create(map[string]interface{}{"id": 1})
-	user2        = custom["user"].Create(map[string]interface{}{"id": 2})
-	customEm     = custom["em"].Create(nil)
-	customStrong = custom["strong"].Create(nil)
 )
 
 func TestMarkSameSet(t *testing.T) {
@@ -62,13 +12,13 @@ func TestMarkSameSet(t *testing.T) {
 	assert.True(t, SameMarkSet([]*Mark{}, []*Mark{}))
 
 	// returns true for simple identical sets
-	assert.True(t, SameMarkSet([]*Mark{em2, strong}, []*Mark{em2, strong}))
+	assert.True(t, SameMarkSet([]*Mark{em2, strong2}, []*Mark{em2, strong2}))
 
 	// returns false for different sets
-	assert.False(t, SameMarkSet([]*Mark{em2, strong}, []*Mark{em2, code}))
+	assert.False(t, SameMarkSet([]*Mark{em2, strong2}, []*Mark{em2, code}))
 
 	// returns false when set size differs
-	assert.False(t, SameMarkSet([]*Mark{em2, strong}, []*Mark{em2, strong, code}))
+	assert.False(t, SameMarkSet([]*Mark{em2, strong2}, []*Mark{em2, strong2, code}))
 
 	// recognizes identical links in set
 	assert.True(t, SameMarkSet(
@@ -93,6 +43,29 @@ func TestMarkEq(t *testing.T) {
 }
 
 func TestMarkAddToSet(t *testing.T) {
+	customSchema, err := NewSchema(&SchemaSpec{
+		Nodes: []*NodeSpec{
+			{Key: "doc", Content: "paragraph+"},
+			{Key: "paragraph", Content: "text*"},
+			{Key: "text"},
+		},
+		Marks: []*MarkSpec{
+			{Key: "remark", Attrs: idAttrs, Excludes: &empty, Inclusive: &falsy},
+			{Key: "user", Attrs: idAttrs, Excludes: &underscore},
+			{Key: "strong2", Excludes: &emGroup},
+			{Key: "em", Group: emGroup},
+		},
+	})
+	assert.NoError(t, err)
+	custom := customSchema.Marks
+
+	remark1 := custom["remark"].Create(map[string]interface{}{"id": 1})
+	remark2 := custom["remark"].Create(map[string]interface{}{"id": 2})
+	user1 := custom["user"].Create(map[string]interface{}{"id": 1})
+	user2 := custom["user"].Create(map[string]interface{}{"id": 2})
+	customEm := custom["em"].Create(nil)
+	customStrong := custom["strong2"].Create(nil)
+
 	// can add to the empty set
 	assert.True(t, SameMarkSet(
 		em2.AddToSet([]*Mark{}),
@@ -107,14 +80,14 @@ func TestMarkAddToSet(t *testing.T) {
 
 	// adds marks with lower rank before others
 	assert.True(t, SameMarkSet(
-		em2.AddToSet([]*Mark{strong}),
-		[]*Mark{em2, strong},
+		em2.AddToSet([]*Mark{strong2}),
+		[]*Mark{em2, strong2},
 	))
 
 	// adds marks with higher rank after others
 	assert.True(t, SameMarkSet(
-		strong.AddToSet([]*Mark{em2}),
-		[]*Mark{em2, strong},
+		strong2.AddToSet([]*Mark{em2}),
+		[]*Mark{em2, strong2},
 	))
 
 	// replaces different marks with new attributes
@@ -131,14 +104,14 @@ func TestMarkAddToSet(t *testing.T) {
 
 	// puts code marks at the end
 	assert.True(t, SameMarkSet(
-		code.AddToSet([]*Mark{em2, strong, link("http://foo")}),
-		[]*Mark{em2, strong, link("http://foo"), code},
+		code.AddToSet([]*Mark{em2, strong2, link("http://foo")}),
+		[]*Mark{em2, strong2, link("http://foo"), code},
 	))
 
 	// puts marks with middle rank in the middle
 	assert.True(t, SameMarkSet(
-		strong.AddToSet([]*Mark{em2, code}),
-		[]*Mark{em2, strong, code},
+		strong2.AddToSet([]*Mark{em2, code}),
+		[]*Mark{em2, strong2, code},
 	))
 
 	// allows nonexclusive instances of marks with the same type
@@ -192,7 +165,7 @@ func TestMarkRemoveFromSet(t *testing.T) {
 	assert.True(t, SameMarkSet(em2.RemoveFromSet([]*Mark{em2}), []*Mark{}))
 
 	// is a no-op when the mark isn't in the set
-	assert.True(t, SameMarkSet(strong.RemoveFromSet([]*Mark{em2}), []*Mark{em2}))
+	assert.True(t, SameMarkSet(strong2.RemoveFromSet([]*Mark{em2}), []*Mark{em2}))
 
 	// can remove a mark with attributes
 	assert.True(t, SameMarkSet(

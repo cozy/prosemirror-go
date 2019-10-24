@@ -9,7 +9,20 @@ import "fmt"
 // needed. The API tries to make this easy.
 type Fragment struct {
 	Content []*Node
-	Size    int
+	// Size is the total of the size of its content nodes.
+	Size int
+}
+
+func NewFragment(content []*Node, size ...int) *Fragment {
+	fragment := Fragment{Content: content, Size: 0}
+	if len(size) == 0 {
+		for _, node := range content {
+			fragment.Size += node.NodeSize()
+		}
+	} else {
+		fragment.Size = size[0]
+	}
+	return &fragment
 }
 
 // The number of child nodes in this fragment.
@@ -28,8 +41,12 @@ func (f *Fragment) Child(index int) *Node {
 
 // Find the first position at which this fragment and another fragment differ,
 // or `null` if they are the same.
-func (f *Fragment) FindDiffStart(other *Fragment, pos int) *int {
-	return findDiffStart(f, other, pos)
+func (f *Fragment) FindDiffStart(other *Fragment, pos ...int) *int {
+	p := 0
+	if len(pos) > 0 {
+		p = pos[0]
+	}
+	return findDiffStart(f, other, p)
 }
 
 // Find the first position, searching from the end, at which this fragment and
@@ -42,6 +59,16 @@ func (f *Fragment) FindDiffEnd(other *Fragment, posA, posB int) *DiffEnd {
 
 // TODO
 
+// Build a fragment from an array of nodes. Ensures that adjacent text nodes
+// with the same marks are joined together.
+func FragmentFromArray(array []*Node) *Fragment {
+	if len(array) == 0 {
+		return EmptyFragment
+	}
+	// TODO
+	return NewFragment(array)
+}
+
 // Create a fragment from something that can be interpreted as a set of nodes.
 // For null, it returns the empty fragment. For a fragment, the fragment
 // itself. For a node or array of nodes, a fragment containing those nodes.
@@ -52,7 +79,10 @@ func FragmentFrom(nodes interface{}) (*Fragment, error) {
 	switch nodes := nodes.(type) {
 	case *Fragment:
 		return nodes, nil
-		// TODO
+	case []*Node:
+		return FragmentFromArray(nodes), nil
+	case *Node:
+		return NewFragment([]*Node{nodes}, nodes.NodeSize()), nil
 	}
 	return nil, fmt.Errorf("Can not convert %v to a Fragment", nodes)
 }
