@@ -25,6 +25,36 @@ var (
 		}
 		return schema.Mark("link", attrs)
 	}
+
+	empty      = ""
+	underscore = "_"
+	falsy      = false
+	emGroup    = "em-group"
+	idAttrs    = map[string]*AttributeSpec{
+		"id": &AttributeSpec{},
+	}
+
+	customSchema, _ = NewSchema(&SchemaSpec{
+		Nodes: []*NodeSpec{
+			{Key: "doc", Content: "paragraph+"},
+			{Key: "paragraph", Content: "text*"},
+			{Key: "text"},
+		},
+		Marks: []*MarkSpec{
+			{Key: "remark", Attrs: idAttrs, Excludes: &empty, Inclusive: &falsy},
+			{Key: "user", Attrs: idAttrs, Excludes: &underscore},
+			{Key: "strong", Excludes: &emGroup},
+			{Key: "em", Group: emGroup},
+		},
+	})
+	custom = customSchema.Marks
+
+	remark1      = custom["remark"].Create(map[string]interface{}{"id": 1})
+	remark2      = custom["remark"].Create(map[string]interface{}{"id": 2})
+	user1        = custom["user"].Create(map[string]interface{}{"id": 1})
+	user2        = custom["user"].Create(map[string]interface{}{"id": 2})
+	customEm     = custom["em"].Create(nil)
+	customStrong = custom["strong"].Create(nil)
 )
 
 func TestMarkSameSet(t *testing.T) {
@@ -111,28 +141,47 @@ func TestMarkAddToSet(t *testing.T) {
 		[]*Mark{em2, strong, code},
 	))
 
-	// TODO custom elements
-
 	// allows nonexclusive instances of marks with the same type
-	// ist(remark2.addToSet([remark1]), [remark1, remark2], Mark.sameSet))
+	assert.True(t, SameMarkSet(
+		remark2.AddToSet([]*Mark{remark1}),
+		[]*Mark{remark1, remark2},
+	))
 
 	// doesn't duplicate identical instances of nonexclusive marks
-	// ist(remark1.addToSet([remark1]), [remark1], Mark.sameSet))
+	assert.True(t, SameMarkSet(
+		remark1.AddToSet([]*Mark{remark1}),
+		[]*Mark{remark1},
+	))
 
 	// clears all others when adding a globally-excluding mark
-	// ist(user1.addToSet([remark1, customEm]), [user1], Mark.sameSet))
+	assert.True(t, SameMarkSet(
+		user1.AddToSet([]*Mark{remark1, customEm}),
+		[]*Mark{user1},
+	))
 
 	// does not allow adding another mark to a globally-excluding mark
-	// ist(customEm.addToSet([user1]), [user1], Mark.sameSet))
+	assert.True(t, SameMarkSet(
+		customEm.AddToSet([]*Mark{user1}),
+		[]*Mark{user1},
+	))
 
 	// does overwrite a globally-excluding mark when adding another instance
-	// ist(user2.addToSet([user1]), [user2], Mark.sameSet))
+	assert.True(t, SameMarkSet(
+		user2.AddToSet([]*Mark{user1}),
+		[]*Mark{user2},
+	))
 
 	// doesn't add anything when another mark excludes the added mark
-	// ist(customEm.addToSet([remark1, customStrong]), [remark1, customStrong], Mark.sameSet))
+	assert.True(t, SameMarkSet(
+		customEm.AddToSet([]*Mark{remark1, customStrong}),
+		[]*Mark{remark1, customStrong},
+	))
 
 	// remove excluded marks when adding a mark
-	// ist(customStrong.addToSet([remark1, customEm]), [remark1, customStrong], Mark.sameSet))
+	assert.True(t, SameMarkSet(
+		customStrong.AddToSet([]*Mark{remark1, customEm}),
+		[]*Mark{remark1, customStrong},
+	))
 }
 
 func TestMarkRemoveFromSet(t *testing.T) {

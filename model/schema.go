@@ -199,7 +199,7 @@ type MarkSpec struct {
 	// Whether this mark should be active when the cursor is positioned
 	// at its end (or at its start when that is also the start of the
 	// parent node). Defaults to true.
-	Inclusive bool
+	Inclusive *bool
 
 	// Determines which other marks this mark can coexist with. Should be a
 	// space-separated strings naming other marks or groups of marks. When a

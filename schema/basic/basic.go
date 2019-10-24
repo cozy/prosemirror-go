@@ -5,7 +5,9 @@ package basic
 import "github.com/cozy/prosemirror-go/model"
 
 var (
-	empty        = ""
+	empty = ""
+	falsy = false
+
 	headingAttrs = map[string]*model.AttributeSpec{
 		"level": {Default: 1},
 	}
@@ -59,7 +61,7 @@ var Nodes = []*model.NodeSpec{
 var Marks = []*model.MarkSpec{
 	// A link. Has href and title attributes. title defaults to the empty string.
 	// Rendered and parsed as an <a> element.
-	{Key: "link", Attrs: linkAttrs, Inclusive: false},
+	{Key: "link", Attrs: linkAttrs, Inclusive: &falsy},
 
 	// An emphasis mark. Rendered as an <em> element. Has parse rules that also
 	// match <i> and font-style: italic.
