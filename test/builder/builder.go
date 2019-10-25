@@ -83,16 +83,19 @@ func flatten(schema *model.Schema, children []interface{}, f nodeMapper) Result 
 		switch child := child.(type) {
 		case NodeWithTag:
 			for id, val := range child.Tag {
-				// TODO child.flat || child.isText ? 0 : 1
-				tag[id] = val + pos
+				extra := 0
+				if !child.IsText() { // TODO child.flat
+					extra = 1
+				}
+				tag[id] = val + extra + pos
 			}
 		case Result:
-			offset := 0
-			if len(child.Flat) > 0 {
-				offset = 1
+			extra := 0
+			if len(child.Flat) == 0 {
+				extra = 1
 			}
 			for id, val := range child.Tag {
-				tag[id] = val + offset + pos
+				tag[id] = val + extra + pos
 			}
 		}
 
@@ -108,7 +111,7 @@ func flatten(schema *model.Schema, children []interface{}, f nodeMapper) Result 
 					if c == '>' {
 						out += child[at:i]
 						pos += i - at
-						at = i + j
+						at = i + j + 1
 						tag[child[i+1:i+j]] = pos
 						break
 					}

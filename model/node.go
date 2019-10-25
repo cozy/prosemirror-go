@@ -37,7 +37,10 @@ func NewNode(typ *NodeType, attrs map[string]interface{}, content *Fragment, mar
 // one. For non-leaf nodes, it is the size of the content plus two (the start
 // and end token).
 func (n *Node) NodeSize() int {
-	if n.IsLeaf() || n.IsText() {
+	if n.IsText() {
+		return len(*n.Text)
+	}
+	if n.IsLeaf() {
 		return 1
 	}
 	return 2 + n.Content.Size
