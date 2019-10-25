@@ -32,9 +32,17 @@ func (f *Fragment) ChildCount() int {
 
 // Get the child node at the given index. Raise an error when the index is out
 // of range.
-func (f *Fragment) Child(index int) *Node {
+func (f *Fragment) Child(index int) (*Node, error) {
 	if index >= len(f.Content) {
-		panic(fmt.Errorf("Index %d out of range for %v", index, f))
+		return nil, fmt.Errorf("Index %d out of range for %v", index, f)
+	}
+	return f.Content[index], nil
+}
+
+// Get the child node at the given index, if it exists.
+func (f *Fragment) MaybeChild(index int) *Node {
+	if index >= len(f.Content) {
+		return nil
 	}
 	return f.Content[index]
 }

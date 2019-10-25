@@ -11,8 +11,14 @@ func findDiffStart(a, b *Fragment, pos int) *int {
 			return &pos
 		}
 
-		childA := a.Child(i)
-		childB := b.Child(i)
+		childA, err := a.Child(i)
+		if err != nil {
+			panic(err)
+		}
+		childB, err := b.Child(i)
+		if err != nil {
+			panic(err)
+		}
 		if childA == childB {
 			pos += childA.NodeSize()
 			continue
@@ -22,8 +28,11 @@ func findDiffStart(a, b *Fragment, pos int) *int {
 			return &pos
 		}
 
-		if childA.IsText() && childA.Text != childB.Text {
-			for j := 0; childA.Text[j] == childB.Text[j]; j++ {
+		if childA.IsText() && (*childA.Text) != (*childB.Text) {
+			for j := 0; j < len(*childA.Text) && j < len(*childB.Text); j++ {
+				if (*childA.Text)[j] != (*childB.Text)[j] {
+					break
+				}
 				pos++
 			}
 			return &pos
@@ -60,8 +69,14 @@ func findDiffEnd(a, b *Fragment, posA, posB int) *DiffEnd {
 
 		ia--
 		ib--
-		childA := a.Child(ia)
-		childB := b.Child(ib)
+		childA, err := a.Child(ia)
+		if err != nil {
+			panic(err)
+		}
+		childB, err := b.Child(ib)
+		if err != nil {
+			panic(err)
+		}
 		size := childA.NodeSize()
 		if childA == childB {
 			posA -= size
@@ -73,15 +88,18 @@ func findDiffEnd(a, b *Fragment, posA, posB int) *DiffEnd {
 			return &DiffEnd{A: posA, B: posB}
 		}
 
-		if childA.IsText() && childA.Text != childB.Text {
+		if childA.IsText() && *childA.Text != *childB.Text {
 			same := 0
-			la := len(childA.Text)
-			lb := len(childB.Text)
-			minSize := len(childA.Text)
+			la := len(*childA.Text)
+			lb := len(*childB.Text)
+			minSize := len(*childA.Text)
 			if lb < minSize {
 				minSize = lb
 			}
-			for same < minSize && childA.Text[la-same-1] == childB.Text[lb-same-1] {
+			for same < minSize && la-same > 0 && lb-same > 0 {
+				if (*childA.Text)[la-same-1] != (*childB.Text)[lb-same-1] {
+					break
+				}
 				same++
 				posA--
 				posB--

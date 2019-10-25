@@ -36,6 +36,10 @@ func (nt *NodeType) IsText() bool {
 	return nt.Name == "text"
 }
 
+func (nt *NodeType) IsLeaf() bool {
+	return false // TODO
+}
+
 func (nt *NodeType) computeAttrs(attrs map[string]interface{}) map[string]interface{} {
 	return attrs // TODO
 }

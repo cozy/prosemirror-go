@@ -1,7 +1,6 @@
 package model_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/cozy/prosemirror-go/test/builder"
@@ -12,7 +11,6 @@ func TestFragmentFindDiffStart(t *testing.T) {
 	start := func(a, b builder.NodeWithTag) {
 		found := a.Content.FindDiffStart(b.Content)
 		expected, ok := a.Tag["a"]
-		fmt.Printf("found: %v, expected: %v (%v)\n", *found, expected, ok) // TODO
 		if ok {
 			if assert.NotNil(t, found) {
 				assert.Equal(t, expected, *found)
@@ -81,7 +79,6 @@ func TestFragmentFindDiffEnd(t *testing.T) {
 	end := func(a, b builder.NodeWithTag) {
 		found := a.Content.FindDiffEnd(b.Content)
 		expected, ok := a.Tag["a"]
-		fmt.Printf("found: %v, expected: %v (%v)\n", found.A, expected, ok) // TODO
 		if ok {
 			if assert.NotNil(t, found) {
 				assert.Equal(t, expected, found.A)

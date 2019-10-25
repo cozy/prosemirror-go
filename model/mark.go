@@ -144,5 +144,5 @@ func MarkSetFrom(marks ...interface{}) []*Mark {
 	panic(fmt.Errorf("Unexpected marks for MarkSetFrom: %#v", marks))
 }
 
-// The empty set of marks (none in JS)
+// NoMarks is the empty set of marks (none in JS)
 var NoMarks = []*Mark{}
