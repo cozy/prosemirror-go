@@ -27,6 +27,68 @@ func NewFragment(content []*Node, size ...int) *Fragment {
 	return &fragment
 }
 
+// Cut out the sub-fragment between the two given positions.
+func (f *Fragment) Cut(from int, to ...int) *Fragment {
+	t := f.Size
+	if len(to) > 0 {
+		t = to[0]
+	}
+	if from == 0 && t == f.Size {
+		return f
+	}
+	result := []*Node{}
+	size := 0
+	if t > from {
+		pos := 0
+		for _, child := range f.Content {
+			if pos >= t {
+				break
+			}
+			end := pos + child.NodeSize()
+			if end > from {
+				if pos < from || end > t {
+					var start, stop int
+					if child.IsText() {
+						if x := from - pos; x >= 0 {
+							start = x
+						}
+						stop = len(*child.Text)
+						if x := t - pos; x < stop {
+							stop = x
+						}
+					} else {
+						if x := from - pos - 1; x >= 0 {
+							start = x
+						}
+						stop = child.Content.Size
+						if x := t - pos - 1; x < stop {
+							stop = x
+						}
+					}
+					child = child.Cut(start, stop)
+				}
+				result = append(result, child)
+				size += child.NodeSize()
+			}
+			pos = end
+		}
+	}
+	return NewFragment(result, size)
+}
+
+// Compare this fragment to another one.
+func (f *Fragment) Eq(other *Fragment) bool {
+	if len(f.Content) != len(other.Content) {
+		return false
+	}
+	for i, node := range f.Content {
+		if !node.Eq(other.Content[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 // The number of child nodes in this fragment.
 func (f *Fragment) ChildCount() int {
 	return len(f.Content)

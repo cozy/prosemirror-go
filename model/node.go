@@ -65,6 +65,14 @@ func (n *Node) MaybeChild(index int) *Node {
 	return n.Content.MaybeChild(index)
 }
 
+// Test whether two nodes represent the same piece of document.
+func (n *Node) Eq(other *Node) bool {
+	if n == other {
+		return true
+	}
+	return n.SameMarkup(other) && n.Content.Eq(other.Content)
+}
+
 // Compare the markup (type, attributes, and marks) of this node to those of
 // another. Returns true if both have the same markup.
 func (n *Node) SameMarkup(other *Node) bool {
@@ -93,6 +101,16 @@ func (n *Node) HasMarkup(typ *NodeType, args ...interface{}) bool {
 	return SameMarkSet(n.Marks, marks)
 }
 
+// Create a new node with the same markup as this node, containing
+// the given content (or empty, if no content is given).
+func (n *Node) Copy(content ...*Fragment) *Node {
+	c := EmptyFragment
+	if len(content) > 0 {
+		c = content[0]
+	}
+	return NewNode(n.Type, n.Attrs, c, n.Marks)
+}
+
 // Create a copy of this node, with the given set of marks instead of the
 // node's own marks.
 func (n *Node) Mark(marks []*Mark) *Node {
@@ -103,6 +121,29 @@ func (n *Node) Mark(marks []*Mark) *Node {
 		return NewTextNode(n.Type, n.Attrs, *n.Text, marks)
 	}
 	return NewNode(n.Type, n.Attrs, n.Content, marks)
+}
+
+// Create a copy of this node with only the content between the given
+// positions. If `to` is not given, it defaults to the end of the node.
+func (n *Node) Cut(from int, to ...int) *Node {
+	if n.IsText() {
+		t := len(*n.Text)
+		if len(to) > 0 {
+			t = to[0]
+		}
+		if from == 0 && t == len(*n.Text) {
+			return n
+		}
+		return n.WithText((*n.Text)[from:t])
+	}
+	if len(to) == 0 {
+		return n.Copy(n.Content.Cut(from))
+	}
+	t := to[0]
+	if from == 0 && t == n.Content.Size {
+		return n
+	}
+	return n.Copy(n.Content.Cut(from, t))
 }
 
 // True when this is a leaf node.
@@ -128,6 +169,13 @@ func NewTextNode(typ *NodeType, attrs map[string]interface{}, text string, marks
 // True when this is a text node.
 func (n *Node) IsText() bool {
 	return n.Text != nil
+}
+
+func (n *Node) WithText(text string) *Node {
+	if text == *n.Text {
+		return n
+	}
+	return NewTextNode(n.Type, n.Attrs, text, n.Marks)
 }
 
 // TODO

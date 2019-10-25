@@ -3,10 +3,12 @@ package model_test
 import (
 	"testing"
 
+	. "github.com/cozy/prosemirror-go/model"
+	"github.com/cozy/prosemirror-go/test/builder"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNodeToString(t *testing.T) {
+func TestNodeString(t *testing.T) {
 	// nests
 	assert.Equal(t,
 		doc(ul(li(p("hey"), p()), li(p("foo")))).String(),
@@ -24,4 +26,41 @@ func TestNodeToString(t *testing.T) {
 		doc(p("foo", em("bar", strong("quux")), code("baz"))).String(),
 		`doc(paragraph("foo", em("bar"), em(strong("quux")), code("baz")))`,
 	)
+}
+
+func TestNodeCut(t *testing.T) {
+	cut := func(doc, c builder.NodeWithTag) {
+		expected := c.Node
+		var actual *Node
+		if b, ok := doc.Tag["b"]; ok {
+			actual = doc.Cut(doc.Tag["a"], b)
+		} else {
+			actual = doc.Cut(doc.Tag["a"])
+		}
+		assert.True(t, actual.Eq(expected), "%s != %s\n", actual.String(), expected.String())
+	}
+
+	// extracts a full block
+	cut(doc(p("foo"), "<a>", p("bar"), "<b>", p("baz")),
+		doc(p("bar")))
+
+	// cuts text
+	cut(doc(p("0"), p("foo<a>bar<b>baz"), p("2")),
+		doc(p("bar")))
+
+	// cuts deeply
+	cut(doc(blockquote(ul(li(p("a"), p("b<a>c")), li(p("d")), "<b>", li(p("e"))), p("3"))),
+		doc(blockquote(ul(li(p("c")), li(p("d"))))))
+
+	// works from the left
+	cut(doc(blockquote(p("foo<b>bar"))),
+		doc(blockquote(p("foo"))))
+
+	// works to the right
+	cut(doc(blockquote(p("foo<a>bar"))),
+		doc(blockquote(p("bar"))))
+
+	// preserves marks
+	cut(doc(p("foo", em("ba<a>r", img, strong("baz"), br), "qu<b>ux", code("xyz"))),
+		doc(p(em("r", img, strong("baz"), br), "qu")))
 }
