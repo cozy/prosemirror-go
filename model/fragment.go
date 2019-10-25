@@ -1,6 +1,8 @@
 package model
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // A fragment represents a node's collection of child nodes.
 //
@@ -71,6 +73,17 @@ func (f *Fragment) FindDiffEnd(other *Fragment, pos ...int) *DiffEnd {
 		posB = pos[1]
 	}
 	return findDiffEnd(f, other, posA, posB)
+}
+
+func (f *Fragment) toStringInner() string {
+	str := ""
+	for i, node := range f.Content {
+		if i > 0 {
+			str += ", "
+		}
+		str += node.String()
+	}
+	return str
 }
 
 // TODO

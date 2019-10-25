@@ -1,6 +1,9 @@
 package model
 
-import "reflect"
+import (
+	"fmt"
+	"reflect"
+)
 
 // This class represents a node in the tree that makes up a ProseMirror
 // document. So a document is an instance of Node, with children that are also
@@ -107,6 +110,17 @@ func (n *Node) IsLeaf() bool {
 	return n.Type.IsLeaf()
 }
 
+// Return a string representation of this node for debugging purposes.
+func (n *Node) String() string {
+	name := n.Type.Name
+	if n.IsText() {
+		name = fmt.Sprintf("%q", *n.Text)
+	} else if n.Content.Size > 0 {
+		name += fmt.Sprintf("(%s)", n.Content.toStringInner())
+	}
+	return wrapMarks(n.Marks, name)
+}
+
 func NewTextNode(typ *NodeType, attrs map[string]interface{}, text string, marks []*Mark) *Node {
 	return &Node{Type: typ, Attrs: attrs, Text: &text, Content: EmptyFragment, Marks: marks}
 }
@@ -117,3 +131,10 @@ func (n *Node) IsText() bool {
 }
 
 // TODO
+
+func wrapMarks(marks []*Mark, str string) string {
+	for i := len(marks) - 1; i >= 0; i-- {
+		str = fmt.Sprintf("%s(%s)", marks[i].Type.Name, str)
+	}
+	return str
+}

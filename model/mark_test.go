@@ -15,20 +15,20 @@ func TestMarkSameSet(t *testing.T) {
 	assert.True(t, SameMarkSet([]*Mark{em2, strong2}, []*Mark{em2, strong2}))
 
 	// returns false for different sets
-	assert.False(t, SameMarkSet([]*Mark{em2, strong2}, []*Mark{em2, code}))
+	assert.False(t, SameMarkSet([]*Mark{em2, strong2}, []*Mark{em2, code2}))
 
 	// returns false when set size differs
-	assert.False(t, SameMarkSet([]*Mark{em2, strong2}, []*Mark{em2, strong2, code}))
+	assert.False(t, SameMarkSet([]*Mark{em2, strong2}, []*Mark{em2, strong2, code2}))
 
 	// recognizes identical links in set
 	assert.True(t, SameMarkSet(
-		[]*Mark{link("http://foo"), code},
-		[]*Mark{link("http://foo"), code}))
+		[]*Mark{link("http://foo"), code2},
+		[]*Mark{link("http://foo"), code2}))
 
 	// recognizes different links in set
 	assert.False(t, SameMarkSet(
-		[]*Mark{link("http://foo"), code},
-		[]*Mark{link("http://bar"), code}))
+		[]*Mark{link("http://foo"), code2},
+		[]*Mark{link("http://bar"), code2}))
 }
 
 func TestMarkEq(t *testing.T) {
@@ -102,16 +102,16 @@ func TestMarkAddToSet(t *testing.T) {
 		[]*Mark{em2, link("http://foo")},
 	))
 
-	// puts code marks at the end
+	// puts code2 marks at the end
 	assert.True(t, SameMarkSet(
-		code.AddToSet([]*Mark{em2, strong2, link("http://foo")}),
-		[]*Mark{em2, strong2, link("http://foo"), code},
+		code2.AddToSet([]*Mark{em2, strong2, link("http://foo")}),
+		[]*Mark{em2, strong2, link("http://foo"), code2},
 	))
 
 	// puts marks with middle rank in the middle
 	assert.True(t, SameMarkSet(
-		strong2.AddToSet([]*Mark{em2, code}),
-		[]*Mark{em2, strong2, code},
+		strong2.AddToSet([]*Mark{em2, code2}),
+		[]*Mark{em2, strong2, code2},
 	))
 
 	// allows nonexclusive instances of marks with the same type

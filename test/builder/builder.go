@@ -84,7 +84,7 @@ func flatten(schema *model.Schema, children []interface{}, f nodeMapper) Result 
 		case NodeWithTag:
 			for id, val := range child.Tag {
 				extra := 0
-				if !child.IsText() { // TODO child.flat
+				if !child.IsText() {
 					extra = 1
 				}
 				tag[id] = val + extra + pos
@@ -132,6 +132,12 @@ func flatten(schema *model.Schema, children []interface{}, f nodeMapper) Result 
 				pos += node.NodeSize()
 				result = append(result, node)
 			}
+		case NodeBuilder:
+			node := f(child().Node)
+			pos += node.NodeSize()
+			result = append(result, node)
+		default:
+			fmt.Printf("Unknown test type: %T (%v)\n", child, child)
 		}
 	}
 
@@ -144,7 +150,7 @@ func takeAttrs(attrs map[string]interface{}, args []interface{}) (map[string]int
 	}
 	a0 := args[0]
 	switch a0 := a0.(type) {
-	case string, *model.Node, NodeWithTag, Result: // TODO a0.flat
+	case string, *model.Node, NodeWithTag, Result:
 		return attrs, args
 
 	case map[string]interface{}:
@@ -181,7 +187,6 @@ func block(typ *model.NodeType, attrs map[string]interface{}) NodeBuilder {
 		}
 		return nt
 	}
-	// TODO if (type.isLeaf) try { result.flat = [type.create(attrs)] } catch(_) {}
 }
 
 // Create a builder function for marks.

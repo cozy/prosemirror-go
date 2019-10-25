@@ -14,10 +14,15 @@ var (
 	p          = builder.P
 	em         = builder.Em
 	strong     = builder.Strong
+	ul         = builder.Ul
+	li         = builder.Li
+	img        = builder.Img
+	br         = builder.Br
+	code       = builder.Code
 
 	strong2 = schema.Mark("strong")
 	em2     = schema.Mark("em")
-	code    = schema.Mark("code")
+	code2   = schema.Mark("code")
 	link    = func(href string, title ...string) *Mark {
 		attrs := map[string]interface{}{"href": href}
 		if len(title) > 0 {
