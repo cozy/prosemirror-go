@@ -64,3 +64,37 @@ func TestNodeCut(t *testing.T) {
 	cut(doc(p("foo", em("ba<a>r", img, strong("baz"), br), "qu<b>ux", code("xyz"))),
 		doc(p(em("r", img, strong("baz"), br), "qu")))
 }
+
+func TestNodesBetween(t *testing.T) {
+	between := func(doc builder.NodeWithTag, nodes ...string) {
+		i := 0
+		doc.NodesBetween(doc.Tag["a"], doc.Tag["b"], func(node *Node, pos int, _ *Node, _ int) bool {
+			if !assert.NotEqual(t, i, len(nodes), "More nodes iterated than listed ("+node.Type.Name+")") {
+				compare := node.Type.Name
+				if node.IsText() {
+					compare = *node.Text
+				}
+				actual := nodes[i]
+				i++
+				assert.Equal(t, compare, actual)
+				if !node.IsText() {
+					assert.Equal(t, doc.NodeAt(pos), node)
+				}
+				return true
+			}
+			return false
+		})
+	}
+
+	// iterates over text
+	between(doc(p("foo<a>bar<b>baz")),
+		"paragraph", "foobarbaz")
+
+	// descends multiple levels
+	between(doc(blockquote(ul(li(p("f<a>oo")), p("b"), "<b>"), p("c"))),
+		"blockquote", "bullet_list", "list_item", "paragraph", "foo", "paragraph", "b")
+
+	// iterates over inline nodes
+	between(doc(p(em("x"), "f<a>oo", em("bar", img, strong("baz"), br), "quux", code("xy<b>z"))),
+		"paragraph", "foo", "bar", "image", "baz", "hard_break", "quux", "xyz")
+}

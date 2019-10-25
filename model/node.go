@@ -65,6 +65,20 @@ func (n *Node) MaybeChild(index int) *Node {
 	return n.Content.MaybeChild(index)
 }
 
+// Invoke a callback for all descendant nodes recursively between the given two
+// positions that are relative to start of this node's content. The callback is
+// invoked with the node, its parent-relative position, its parent node, and
+// its child index. When the callback returns false for a given node, that
+// node's children will not be recursed over. The last parameter can be used to
+// specify a starting position to count from.
+func (n *Node) NodesBetween(from, to int, fn NBCallback, startPos ...int) *int {
+	s := 0
+	if len(startPos) > 0 {
+		s = startPos[0]
+	}
+	return n.Content.NodesBetween(from, to, fn, s, n)
+}
+
 // Test whether two nodes represent the same piece of document.
 func (n *Node) Eq(other *Node) bool {
 	if n == other {
@@ -144,6 +158,25 @@ func (n *Node) Cut(from int, to ...int) *Node {
 		return n
 	}
 	return n.Copy(n.Content.Cut(from, t))
+}
+
+// Find the node directly after the given position.
+func (n *Node) NodeAt(pos int) *Node {
+	node := n
+	for {
+		index, offset, err := node.Content.findIndex(pos)
+		if err != nil {
+			panic(err)
+		}
+		node = node.MaybeChild(index)
+		if node == nil {
+			return nil
+		}
+		if offset == pos || node.IsText() {
+			return node
+		}
+		pos -= offset + 1
+	}
 }
 
 // True when this is a leaf node.

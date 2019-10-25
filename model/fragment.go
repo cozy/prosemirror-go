@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -25,6 +26,35 @@ func NewFragment(content []*Node, size ...int) *Fragment {
 		fragment.Size = size[0]
 	}
 	return &fragment
+}
+
+type NBCallback func(*Node, int, *Node, int) bool
+
+// Invoke a callback for all descendant nodes between the given two positions
+// (relative to start of this fragment). Doesn't descend into a node when the
+// callback returns `false`.
+func (f *Fragment) NodesBetween(from, to int, fn NBCallback, nodeStart int, parent *Node) *int {
+	pos := 0
+	for i, child := range f.Content {
+		if pos >= to {
+			break
+		}
+		end := pos + child.NodeSize()
+		if end > from && fn(child, nodeStart+pos, parent, i) && child.Content.Size > 0 {
+			start := pos + 1
+			f := 0
+			if x := from - start; x > 0 {
+				f = x
+			}
+			t := child.Content.Size
+			if x := to - start; x < t {
+				t = x
+			}
+			child.NodesBetween(f, t, fn, nodeStart+start)
+		}
+		pos = end
+	}
+	return nil
 }
 
 // Cut out the sub-fragment between the two given positions.
@@ -135,6 +165,36 @@ func (f *Fragment) FindDiffEnd(other *Fragment, pos ...int) *DiffEnd {
 		posB = pos[1]
 	}
 	return findDiffEnd(f, other, posA, posB)
+}
+
+// Find the index and inner offset corresponding to a given relative position
+// in this fragment.
+func (f *Fragment) findIndex(pos int, round ...int) (index int, offset int, err error) {
+	if pos == 0 {
+		return 0, pos, nil
+	}
+	if pos == f.Size {
+		return len(f.Content), pos, nil
+	}
+	if pos > f.Size || pos < 0 {
+		return 0, 0, fmt.Errorf("Position %d outside of fragment (%v)", pos, f)
+	}
+	r := -1
+	if len(round) > 0 {
+		r = round[0]
+	}
+	curPos := 0
+	for i, cur := range f.Content {
+		end := curPos + cur.NodeSize()
+		if end >= pos {
+			if end == pos || r > 0 {
+				return i + 1, end, nil
+			}
+			return i, curPos, nil
+		}
+		curPos = end
+	}
+	panic(errors.New("Unexpected state"))
 }
 
 func (f *Fragment) toStringInner() string {
