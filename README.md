@@ -42,12 +42,12 @@ in order to have the server part of the collaborative editing in Go.
 ```
 
 ```go
-func (n *Node) NodesBetween(from, to int, fn NBCallback, startPos ...int) *int {
+func (n *Node) NodesBetween(from, to int, fn NBCallback, startPos ...int) {
 	s := 0
 	if len(startPos) > 0 {
 		s = startPos[0]
 	}
-	return n.Content.NodesBetween(from, to, fn, s, n)
+	n.Content.NodesBetween(from, to, fn, s, n)
 }
 ```
 

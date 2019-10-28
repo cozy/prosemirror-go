@@ -71,12 +71,12 @@ func (n *Node) MaybeChild(index int) *Node {
 // its child index. When the callback returns false for a given node, that
 // node's children will not be recursed over. The last parameter can be used to
 // specify a starting position to count from.
-func (n *Node) NodesBetween(from, to int, fn NBCallback, startPos ...int) *int {
+func (n *Node) NodesBetween(from, to int, fn NBCallback, startPos ...int) {
 	s := 0
 	if len(startPos) > 0 {
 		s = startPos[0]
 	}
-	return n.Content.NodesBetween(from, to, fn, s, n)
+	n.Content.NodesBetween(from, to, fn, s, n)
 }
 
 // Concatenates all the text nodes found in this fragment and its children.
