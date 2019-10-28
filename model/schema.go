@@ -8,6 +8,28 @@ import (
 	"strings"
 )
 
+// For node types where all attrs have a default value (or which don't have any
+// attributes), build up a single reusable default attribute object, and use it
+// for all nodes that don't specify specific attributes.
+func defaultAttrs(attrs map[string]*Attribute) map[string]interface{} {
+	defaults := map[string]interface{}{}
+	for name, attr := range attrs {
+		if !attr.HasDefault {
+			return nil
+		}
+		defaults[name] = attr
+	}
+	return defaults
+}
+
+func initAttrs(attrs map[string]*AttributeSpec) map[string]*Attribute {
+	result := map[string]*Attribute{}
+	for name, attr := range attrs {
+		result[name] = NewAttribute(attr)
+	}
+	return result
+}
+
 // Node types are objects allocated once per Schema and used to tag Node
 // instances. They contain information about the node type, such as its name
 // and what kind of node it represents.
@@ -17,16 +39,20 @@ type NodeType struct {
 	// A link back to the `Schema` the node type belongs to.
 	Schema *Schema
 	// The spec that this type is based on
-	Spec  *NodeSpec
-	Attrs map[string]interface{}
+	Spec         *NodeSpec
+	Attrs        map[string]*Attribute
+	DefaultAttrs map[string]interface{}
 	// TODO
 }
 
 func NewNodeType(name string, schema *Schema, spec *NodeSpec) *NodeType {
+	attrs := initAttrs(spec.Attrs)
 	return &NodeType{
-		Name:   name,
-		Schema: schema,
-		Spec:   spec,
+		Name:         name,
+		Schema:       schema,
+		Spec:         spec,
+		Attrs:        attrs,
+		DefaultAttrs: defaultAttrs(attrs),
 		// TODO
 	}
 }
@@ -64,6 +90,25 @@ func (nt *NodeType) Create(attrs map[string]interface{}, content interface{}, ma
 	return NewNode(nt, nt.computeAttrs(attrs), fragment, MarkSetFrom(marks)), nil
 }
 
+// Like create, but check the given content against the node type's content
+// restrictions, and throw an error if it doesn't match.
+func (nt *NodeType) CreateChecked(attrs map[string]interface{}, content interface{}, marks []*Mark) (*Node, error) {
+	fragment, err := FragmentFrom(content)
+	if err != nil {
+		return nil, err
+	}
+	if !nt.ValidContent(fragment) {
+		return nil, fmt.Errorf("Invalid content for node %s", nt.Name)
+	}
+	return NewNode(nt, nt.computeAttrs(attrs), fragment, MarkSetFrom(marks)), nil
+}
+
+// Returns true if the given fragment is valid content for this node type with
+// the given attributes.
+func (nt *NodeType) ValidContent(content *Fragment) bool {
+	return true // TODO
+}
+
 func compileNodeType(nodes []*NodeSpec, schema *Schema) (map[string]*NodeType, error) {
 	result := map[string]*NodeType{}
 	for _, n := range nodes {
@@ -81,6 +126,23 @@ func compileNodeType(nodes []*NodeSpec, schema *Schema) (map[string]*NodeType, e
 		return nil, errors.New("The text node type should not have attributes")
 	}
 	return result, nil
+}
+
+// Attribute descriptors
+type Attribute struct {
+	HasDefault bool
+	Default    interface{}
+}
+
+func NewAttribute(options *AttributeSpec) *Attribute {
+	if options == nil {
+		return &Attribute{HasDefault: false, Default: nil}
+	}
+	return &Attribute{HasDefault: true, Default: options.Default}
+}
+
+func (a *Attribute) IsRequired() bool {
+	return !a.HasDefault
 }
 
 // Like nodes, marks (which are associated with nodes to signify things like
@@ -285,6 +347,35 @@ func NewSchema(spec *SchemaSpec) (*Schema, error) {
 	return &schema, nil
 }
 
+// Create a node in this schema. The type may be a string or a NodeType
+// instance. Attributes will be extended with defaults, content may be a
+// Fragment, null, a Node, or an array of nodes.
+//
+// :: (union<string, NodeType>, ?Object, ?union<Fragment, Node, [Node]>, ?[Mark]) → Node
+func (s *Schema) Node(typ interface{}, args ...interface{}) (*Node, error) {
+	var t *NodeType
+	switch typ := typ.(type) {
+	case *NodeType:
+		t = typ
+		if t.Schema != s {
+			return nil, fmt.Errorf("Node type from different schema used (%s)", t.Name)
+		}
+	case string:
+		var err error
+		t, err = s.nodeType(typ)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, fmt.Errorf("Invalid node type: %v (%T)", typ, typ)
+	}
+	var attrs map[string]interface{}
+	var content interface{}
+	var marks []*Mark
+	// TODO args
+	return t.CreateChecked(attrs, content, marks)
+}
+
 // Create a text node in the schema. Empty text nodes are not allowed.
 func (s *Schema) Text(text string, marks ...[]*Mark) *Node {
 	typ := s.Nodes["text"]
@@ -309,6 +400,13 @@ func (s *Schema) Mark(typ interface{}, args ...map[string]interface{}) *Mark {
 		attrs = args[0]
 	}
 	return t.Create(attrs)
+}
+
+func (s *Schema) nodeType(name string) (*NodeType, error) {
+	if found, ok := s.Nodes[name]; ok {
+		return found, nil
+	}
+	return nil, fmt.Errorf("Unknown node type: %s", name)
 }
 
 func gatherMarks(schema *Schema, marks []string) ([]*MarkType, error) {

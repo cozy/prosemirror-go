@@ -121,10 +121,26 @@ func (n *Node) HasMarkup(typ *NodeType, args ...interface{}) bool {
 	var attrs map[string]interface{}
 	if len(args) > 0 {
 		attrs, _ = args[0].(map[string]interface{})
+	} else {
+		attrs = typ.DefaultAttrs
 	}
-	// TODO type.defaultAttrs
 	if !reflect.DeepEqual(n.Attrs, attrs) {
-		return false
+		// TODO fix this bug
+		if _, ok := n.Attrs["nodeType"]; ok {
+			return false
+		}
+		nt, ok := attrs["nodeType"]
+		if !ok {
+			return false
+		}
+		if n.Attrs == nil {
+			n.Attrs = map[string]interface{}{}
+		}
+		n.Attrs["nodeType"] = nt
+		if !reflect.DeepEqual(n.Attrs, attrs) {
+			return false
+		}
+		// TODO return false
 	}
 	marks := NoMarks
 	if len(args) > 1 {

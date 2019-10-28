@@ -252,8 +252,24 @@ func FragmentFromArray(array []*Node) *Fragment {
 	if len(array) == 0 {
 		return EmptyFragment
 	}
-	// TODO
-	return NewFragment(array)
+	var joined []*Node
+	size := 0
+	for i, node := range array {
+		size += node.NodeSize()
+		if i > 0 && node.IsText() && array[i-1].SameMarkup(node) {
+			if len(joined) == 0 {
+				joined = array[0:i]
+			}
+			was := joined[len(joined)-1].Text
+			joined[len(joined)-1] = node.WithText(*was + *node.Text)
+		} else if len(joined) > 0 {
+			joined = append(joined, node)
+		}
+	}
+	if len(joined) == 0 {
+		joined = array
+	}
+	return NewFragment(joined, size)
 }
 
 // Create a fragment from something that can be interpreted as a set of nodes.

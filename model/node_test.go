@@ -111,3 +111,32 @@ func TestNodeTextContent(t *testing.T) {
 		doc(ul(li(p("hi")), li(p(em("a"), "b")))).TextContent(),
 		"hiab")
 }
+
+func TestNodeFrom(t *testing.T) {
+	from := func(arg interface{}, expect builder.NodeWithTag) {
+		expected := expect.Node
+		fragment, err := FragmentFrom(arg)
+		assert.NoError(t, err)
+		actual := expect.Copy(fragment)
+		assert.True(t, actual.Eq(expected), "%s != %s\n", actual.String(), expected.String())
+	}
+
+	// wraps a single node
+	para, err := schema.Node("paragraph")
+	assert.NoError(t, err)
+	from(para, doc(p()))
+
+	// wraps an array
+	hard, err := schema.Node("hard_break")
+	assert.NoError(t, err)
+	from([]*Node{hard, schema.Text("foo")}, p(br, "foo"))
+
+	// preserves a fragment
+	from(doc(p("foo")).Content, doc(p("foo")))
+
+	// accepts null
+	from(nil, p())
+
+	// joins adjacent text
+	from([]*Node{schema.Text("a"), schema.Text("b")}, p("ab"))
+}

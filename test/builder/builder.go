@@ -150,7 +150,7 @@ func takeAttrs(attrs map[string]interface{}, args []interface{}) (map[string]int
 	}
 	a0 := args[0]
 	switch a0 := a0.(type) {
-	case string, *model.Node, NodeWithTag, Result:
+	case string, *model.Node, NodeWithTag, Result, NodeBuilder:
 		return attrs, args
 
 	case map[string]interface{}:
@@ -170,7 +170,7 @@ func takeAttrs(attrs map[string]interface{}, args []interface{}) (map[string]int
 		}
 		return result, args
 	}
-	panic(fmt.Errorf("Unsupported type %t for takeAttrs (%v)", a0, a0))
+	panic(fmt.Errorf("Unsupported type %T for takeAttrs (%v)", a0, a0))
 }
 
 func block(typ *model.NodeType, attrs map[string]interface{}) NodeBuilder {
