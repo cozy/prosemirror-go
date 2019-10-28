@@ -62,6 +62,13 @@ func (r *ResolvedPos) Node(depth *int) *Node {
 	return r.Path[r.resolveDepth(depth)*3].(*Node)
 }
 
+// The index into the ancestor at the given level. If this points at the 3rd
+// node in the 2nd paragraph on the top level, for example, p.index(0) is 2 and
+// p.index(1) is 3.
+func (r *ResolvedPos) Index(depth *int) int {
+	return r.Path[r.resolveDepth(depth)*3+1].(int)
+}
+
 // The (absolute) position at the start of the node at the given level.
 func (r *ResolvedPos) Start(depth *int) int {
 	d := r.resolveDepth(depth)
@@ -101,6 +108,48 @@ func (r *ResolvedPos) After(depth *int) (int, error) {
 		return r.Pos, nil
 	}
 	return r.Path[d*3-1].(int) + r.Path[d*3].(*Node).NodeSize(), nil
+}
+
+// Get the node directly after the position, if any. If the position points
+// into a text node, only the part of that node after the position is returned.
+func (r *ResolvedPos) NodeAfter() (*Node, error) {
+	parent := r.Parent()
+	index := r.Index(&r.Depth)
+	if index == parent.ChildCount() {
+		return nil, nil
+	}
+	dOff := r.Pos - r.Path[len(r.Path)-1].(int)
+	child, err := parent.Child(index)
+	if err != nil {
+		return nil, err
+	}
+	if dOff > 0 {
+		return child.Cut(dOff), nil
+	}
+	return child, nil
+}
+
+// Get the node directly before the position, if any. If the position points
+// into a text node, only the part of that node before the position is
+// returned.
+func (r *ResolvedPos) NodeBefore() (*Node, error) {
+	index := r.Index(&r.Depth)
+	dOff := r.Pos - r.Path[len(r.Path)-1].(int)
+	if dOff > 0 {
+		child, err := r.Parent().Child(index)
+		if err != nil {
+			return nil, err
+		}
+		return child.Cut(0, dOff), nil
+	}
+	if index == 0 {
+		return nil, nil
+	}
+	child, err := r.Parent().Child(index - 1)
+	if err != nil {
+		return nil, err
+	}
+	return child, nil
 }
 
 // The depth up to which this position and the given (non-resolved) position

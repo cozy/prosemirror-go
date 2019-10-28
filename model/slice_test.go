@@ -74,7 +74,7 @@ func TestNodeSlice(t *testing.T) {
 	test(doc(p("on<a>e"), p("t<b>wo")), doc(p("e"), p("t")), 1, 1)
 
 	// can cut part of marked text
-	test(doc(p("here's noth<a>ing and ", em("here's e<b>m"))),
+	test(doc(p("here's noth<a>ing and ", em("here's e<b>m"))), // nolint:misspell
 		p("ing and ", em("here's e")), 0, 0)
 
 	// can cut across different depths

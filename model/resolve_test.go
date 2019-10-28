@@ -36,7 +36,7 @@ func TestNodeResolve(t *testing.T) {
 		{rdoc, blk, 0, nil, p2.node},
 		{rdoc, blk, p2, 0, nil, "cd"},
 		{rdoc, blk, p2, 1, "c", "d"},
-		{rdoc, blk, p2, 2, "cd", nil},
+		{rdoc, blk, p2, 2, "cd", "ef"},
 		{rdoc, blk, p2, 3, "e", "f"},
 		{rdoc, blk, p2, 4, "ef", nil},
 		{rdoc, blk, 6, p2.node, nil},
@@ -63,6 +63,25 @@ func TestNodeResolve(t *testing.T) {
 			}
 		}
 		assert.Equal(t, dpos.ParentOffset, exp[len(exp)-3])
-		// TODO nodeBefore & nodeAfter
+		before, err := dpos.NodeBefore()
+		assert.NoError(t, err)
+		eBefore := exp[len(exp)-2]
+		if str, ok := eBefore.(string); ok {
+			assert.Equal(t, before.TextContent(), str)
+		} else if eBefore == nil {
+			assert.Nil(t, before)
+		} else {
+			assert.Equal(t, before, eBefore)
+		}
+		after, err := dpos.NodeAfter()
+		assert.NoError(t, err)
+		eAfter := exp[len(exp)-1]
+		if str, ok := eAfter.(string); ok {
+			assert.Equal(t, after.TextContent(), str)
+		} else if eAfter == nil {
+			assert.Nil(t, after)
+		} else {
+			assert.Equal(t, after, eAfter)
+		}
 	}
 }

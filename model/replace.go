@@ -44,5 +44,4 @@ func (s *Slice) String() string {
 	return fmt.Sprintf("%s(%d,%d)", s.Content.String(), s.OpenStart, s.OpenEnd)
 }
 
-// The empty slice.
 var EmptySlice = NewSlice(EmptyFragment, 0, 0)
