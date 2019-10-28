@@ -31,6 +31,26 @@ in order to have the server part of the collaborative editing in Go.
 ]
 ```
 
+3. Go doesn't support optional arguments like JS does. We are emulating this
+   with variadic arguments:
+
+```js
+  // :: (number, number, (node: Node, pos: number, parent: Node, index: number) → ?bool, ?number)
+  nodesBetween(from, to, f, startPos = 0) {
+    this.content.nodesBetween(from, to, f, startPos, this)
+  }
+```
+
+```go
+func (n *Node) NodesBetween(from, to int, fn NBCallback, startPos ...int) *int {
+	s := 0
+	if len(startPos) > 0 {
+		s = startPos[0]
+	}
+	return n.Content.NodesBetween(from, to, fn, s, n)
+}
+```
+
 ## License
 
 The port in Go of ProseMirror has been developed by Cozy Cloud and is
