@@ -233,6 +233,11 @@ func (f *Fragment) findIndex(pos int, round ...int) (index int, offset int, err 
 	panic(errors.New("Unexpected state"))
 }
 
+// Return a debugging string that describes this fragment.
+func (f *Fragment) String() string {
+	return fmt.Sprintf("<%s>", f.toStringInner())
+}
+
 func (f *Fragment) toStringInner() string {
 	str := ""
 	for i, node := range f.Content {

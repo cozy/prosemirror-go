@@ -140,3 +140,36 @@ func TestNodeFrom(t *testing.T) {
 	// joins adjacent text
 	from([]*Node{schema.Text("a"), schema.Text("b")}, p("ab"))
 }
+
+// TODO toJSON
+
+func TestNodeToString(t *testing.T) {
+	customSchema, err := NewSchema(&SchemaSpec{
+		Nodes: []*NodeSpec{
+			{Key: "doc", Content: "paragraph+"},
+			{Key: "paragraph", Content: "text*"},
+			{Key: "text", ToDebugString: func(_ *Node) string { return "custom_text" }},
+			{Key: "hard_break", ToDebugString: func(_ *Node) string { return "custom_hard_break" }},
+		},
+	})
+	assert.NoError(t, err)
+
+	// should have the default toString method [text]
+	assert.Equal(t, schema.Text("hello").String(), `"hello"`)
+
+	// should have the default toString method [br]
+	assert.Equal(t, br().String(), "hard_break")
+
+	// should be able to redefine it from NodeSpec by specifying toDebugString method
+	assert.Equal(t, customSchema.Text("hello").String(), "custom_text")
+
+	// should be respected by Fragment
+	hard, err := customSchema.Nodes["hard_break"].CreateChecked()
+	assert.NoError(t, err)
+	assert.Equal(t,
+		FragmentFromArray(
+			[]*Node{customSchema.Text("hello"), hard, customSchema.Text("world")},
+		).String(),
+		"<custom_text, custom_hard_break, custom_text>",
+	)
+}

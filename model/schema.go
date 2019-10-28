@@ -92,7 +92,21 @@ func (nt *NodeType) Create(attrs map[string]interface{}, content interface{}, ma
 
 // Like create, but check the given content against the node type's content
 // restrictions, and throw an error if it doesn't match.
-func (nt *NodeType) CreateChecked(attrs map[string]interface{}, content interface{}, marks []*Mark) (*Node, error) {
+//
+// :: (?Object, ?union<Fragment, Node, [Node]>, ?[Mark]) → Node
+func (nt *NodeType) CreateChecked(args ...interface{}) (*Node, error) {
+	var attrs map[string]interface{}
+	if len(args) > 0 {
+		attrs, _ = args[0].(map[string]interface{})
+	}
+	var content interface{}
+	if len(args) > 1 {
+		content = args[1]
+	}
+	var marks []*Mark
+	if len(args) > 2 {
+		marks, _ = args[2].([]*Mark)
+	}
 	fragment, err := FragmentFrom(content)
 	if err != nil {
 		return nil, err
@@ -254,6 +268,10 @@ type NodeSpec struct {
 
 	// The attributes that nodes of this type get.
 	Attrs map[string]*AttributeSpec
+
+	// Defines the default way a node of this type should be serialized to a
+	// string representation for debugging (e.g. in error messages).
+	ToDebugString func(*Node) string
 
 	// TODO there are more fields, but are they useful on the server?
 }

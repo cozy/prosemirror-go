@@ -225,6 +225,9 @@ func (n *Node) IsLeaf() bool {
 
 // Return a string representation of this node for debugging purposes.
 func (n *Node) String() string {
+	if n.Type.Spec.ToDebugString != nil {
+		return n.Type.Spec.ToDebugString(n)
+	}
 	name := n.Type.Name
 	if n.IsText() {
 		name = fmt.Sprintf("%q", *n.Text)
