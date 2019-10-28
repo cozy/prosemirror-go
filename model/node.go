@@ -212,42 +212,32 @@ func (n *Node) Slice(from int, args ...interface{}) *Slice {
 		return EmptySlice
 	}
 
-	resFrom := n.Resolve(from)
-	resTo := n.Resolve(to)
+	resFrom, err := n.Resolve(from)
+	if err != nil {
+		panic(err)
+	}
+	resTo, err := n.Resolve(to)
+	if err != nil {
+		panic(err)
+	}
 	depth := 0
 	if includeParents {
 		depth = resFrom.SharedDepth(to)
 	}
-	start := resFrom.Start(depth)
-	node := resFrom.Node(depth)
+	start := resFrom.Start(&depth)
+	node := resFrom.Node(&depth)
 	content := node.Content.Cut(resFrom.Pos-start, resTo.Pos-start)
 	return NewSlice(content, resFrom.Depth-depth, resTo.Depth-depth)
 }
 
-// TODO
-type ResolvedPos struct {
-	Pos   int
-	Depth int
+// Resolve the given position in the document, returning an object with
+// information about its context.
+func (n *Node) Resolve(pos int) (*ResolvedPos, error) {
+	return resolvePosCached(n, pos)
 }
 
-// TODO
-func (n *Node) Resolve(_ int) *ResolvedPos {
-	return &ResolvedPos{}
-}
-
-// TODO
-func (r *ResolvedPos) Start(_ int) int {
-	return 0
-}
-
-// TODO
-func (r *ResolvedPos) Node(_ int) *Node {
-	return nil
-}
-
-// TODO
-func (r *ResolvedPos) SharedDepth(_ int) int {
-	return 0
+func (n *Node) ResolveNoCache(pos int) (*ResolvedPos, error) {
+	return resolvePos(n, pos)
 }
 
 // Find the node directly after the given position.
