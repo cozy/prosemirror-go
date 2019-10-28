@@ -98,3 +98,16 @@ func TestNodesBetween(t *testing.T) {
 	between(doc(p(em("x"), "f<a>oo", em("bar", img, strong("baz"), br), "quux", code("xy<b>z"))),
 		"paragraph", "foo", "bar", "image", "baz", "hard_break", "quux", "xyz")
 }
+
+func TestNodeTextContent(t *testing.T) {
+	// works on a whole doc
+	assert.Equal(t, doc(p("foo")).TextContent(), "foo")
+
+	// works on a text node
+	assert.Equal(t, schema.Text("foo").TextContent(), "foo")
+
+	// works on a nested element
+	assert.Equal(t,
+		doc(ul(li(p("hi")), li(p(em("a"), "b")))).TextContent(),
+		"hiab")
+}

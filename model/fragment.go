@@ -57,6 +57,42 @@ func (f *Fragment) NodesBetween(from, to int, fn NBCallback, nodeStart int, pare
 	return nil
 }
 
+func (f *Fragment) TextBetween(from, to int, args ...string) string {
+	blockSeparator := ""
+	if len(args) > 0 {
+		blockSeparator = args[0]
+	}
+	leafText := ""
+	if len(args) > 1 {
+		leafText = args[1]
+	}
+	text := ""
+	separated := true
+	f.NodesBetween(from, to, func(node *Node, pos int, _ *Node, _ int) bool {
+		if node.IsText() {
+			max := from
+			if pos > max {
+				max = pos
+			}
+			start := max - pos
+			stop := to - pos
+			if stop > len(*node.Text) {
+				stop = len(*node.Text)
+			}
+			text += (*node.Text)[start:stop]
+			separated = blockSeparator != ""
+		} else if node.IsLeaf() && leafText != "" {
+			text += leafText
+			separated = blockSeparator != ""
+		} else if !separated && node.IsBlock() {
+			text += blockSeparator
+			separated = true
+		}
+		return true
+	}, 0, nil)
+	return text
+}
+
 // Cut out the sub-fragment between the two given positions.
 func (f *Fragment) Cut(from int, to ...int) *Fragment {
 	t := f.Size

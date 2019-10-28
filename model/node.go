@@ -79,6 +79,24 @@ func (n *Node) NodesBetween(from, to int, fn NBCallback, startPos ...int) *int {
 	return n.Content.NodesBetween(from, to, fn, s, n)
 }
 
+// Concatenates all the text nodes found in this fragment and its children.
+func (n *Node) TextContent() string {
+	if n.IsText() {
+		return *n.Text
+	}
+	return n.TextBetween(0, n.Content.Size, "")
+}
+
+// Get all text between positions from and to. When blockSeparator is given, it
+// will be inserted whenever a new block node is started. When leafText is
+// given, it'll be inserted for every non-text leaf node encountered.
+func (n *Node) TextBetween(from, to int, args ...string) string {
+	if n.IsText() {
+		return (*n.Text)[from:to]
+	}
+	return n.Content.TextBetween(from, to, args...)
+}
+
 // Test whether two nodes represent the same piece of document.
 func (n *Node) Eq(other *Node) bool {
 	if n == other {
@@ -177,6 +195,11 @@ func (n *Node) NodeAt(pos int) *Node {
 		}
 		pos -= offset + 1
 	}
+}
+
+// True when this is a block (non-inline node)
+func (n *Node) IsBlock() bool {
+	return n.Type.IsBlock()
 }
 
 // True when this is a leaf node.

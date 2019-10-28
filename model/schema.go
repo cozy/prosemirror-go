@@ -36,6 +36,11 @@ func (nt *NodeType) IsText() bool {
 	return nt.Name == "text"
 }
 
+// True if this is a block type
+func (nt *NodeType) IsBlock() bool {
+	return nt.Name != "text" // TODO !spec.inline
+}
+
 func (nt *NodeType) IsLeaf() bool {
 	return false // TODO
 }
