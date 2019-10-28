@@ -1,6 +1,9 @@
 package model
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 // You can resolve a position to get more information about it. Objects of this
 // class represent such a resolved position, providing various pieces of
@@ -72,6 +75,32 @@ func (r *ResolvedPos) Start(depth *int) int {
 func (r *ResolvedPos) End(depth *int) int {
 	d := r.resolveDepth(depth)
 	return r.Start(&d) + r.Node(&d).Content.Size
+}
+
+// The (absolute) position directly before the wrapping node at the given
+// level, or, when depth is this.depth + 1, the original position.
+func (r *ResolvedPos) Before(depth *int) (int, error) {
+	d := r.resolveDepth(depth)
+	if d == 0 {
+		return 0, errors.New("There is no position before the top-level node") // TODO RangeError
+	}
+	if d == r.Depth+1 {
+		return r.Pos, nil
+	}
+	return r.Path[d*3-1].(int), nil
+}
+
+// The (absolute) position directly after the wrapping node at the given level,
+// or the original position when depth is this.depth + 1.
+func (r *ResolvedPos) After(depth *int) (int, error) {
+	d := r.resolveDepth(depth)
+	if d == 0 {
+		return 0, errors.New("There is no position after the top-level node") // TODO RangeError
+	}
+	if d == r.Depth+1 {
+		return r.Pos, nil
+	}
+	return r.Path[d*3-1].(int) + r.Path[d*3].(*Node).NodeSize(), nil
 }
 
 // The depth up to which this position and the given (non-resolved) position
