@@ -194,6 +194,62 @@ func (n *Node) Cut(from int, to ...int) *Node {
 	return n.Copy(n.Content.Cut(from, t))
 }
 
+// Cut out the part of the document between the given positions, and return it
+// as a Slice object.
+func (n *Node) Slice(from int, args ...interface{}) *Slice {
+	to := n.Content.Size
+	if len(args) > 0 {
+		if t, ok := args[0].(int); ok {
+			to = t
+		}
+	}
+	includeParents := false
+	if len(args) > 1 {
+		includeParents, _ = args[1].(bool)
+	}
+
+	if from == to {
+		return EmptySlice
+	}
+
+	resFrom := n.Resolve(from)
+	resTo := n.Resolve(to)
+	depth := 0
+	if includeParents {
+		depth = resFrom.SharedDepth(to)
+	}
+	start := resFrom.Start(depth)
+	node := resFrom.Node(depth)
+	content := node.Content.Cut(resFrom.Pos-start, resTo.Pos-start)
+	return NewSlice(content, resFrom.Depth-depth, resTo.Depth-depth)
+}
+
+// TODO
+type ResolvedPos struct {
+	Pos   int
+	Depth int
+}
+
+// TODO
+func (n *Node) Resolve(_ int) *ResolvedPos {
+	return &ResolvedPos{}
+}
+
+// TODO
+func (r *ResolvedPos) Start(_ int) int {
+	return 0
+}
+
+// TODO
+func (r *ResolvedPos) Node(_ int) *Node {
+	return nil
+}
+
+// TODO
+func (r *ResolvedPos) SharedDepth(_ int) int {
+	return 0
+}
+
 // Find the node directly after the given position.
 func (n *Node) NodeAt(pos int) *Node {
 	node := n

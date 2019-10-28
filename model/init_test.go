@@ -19,6 +19,7 @@ var (
 	img        = builder.Img
 	br         = builder.Br
 	code       = builder.Code
+	a          = builder.A
 
 	strong2 = schema.Mark("strong")
 	em2     = schema.Mark("em")
