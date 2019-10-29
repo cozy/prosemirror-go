@@ -5,9 +5,10 @@ import (
 	"fmt"
 )
 
-// You can resolve a position to get more information about it. Objects of this
-// class represent such a resolved position, providing various pieces of
-// context information, and some helper methods.
+// ResolvedPos means resolved position. You can resolve a position to get more
+// information about it. Objects of this class represent such a resolved
+// position, providing various pieces of context information, and some helper
+// methods.
 //
 // Throughout this interface, methods that take an optional depth parameter
 // will interpret undefined as this.depth and negative numbers as this.depth +
@@ -24,6 +25,7 @@ type ResolvedPos struct {
 	ParentOffset int
 }
 
+// NewResolvedPos is the constructor of ResolvedPos.
 func NewResolvedPos(pos int, path []interface{}, parentOffset int) *ResolvedPos {
 	return &ResolvedPos{
 		Pos:          pos,
@@ -43,33 +45,34 @@ func (r *ResolvedPos) resolveDepth(val *int) int {
 	return *val
 }
 
-// The parent node that the position points into. Note that even if a position
-// points into a text node, that node is not considered the parent—text nodes
-// are ‘flat’ in this model, and have no content.
+// Parent returns the parent node that the position points into. Note that even
+// if a position points into a text node, that node is not considered the
+// parent—text nodes are ‘flat’ in this model, and have no content.
 func (r *ResolvedPos) Parent() *Node {
 	return r.Node(&r.Depth)
 }
 
-// The root node in which the position was resolved.
+// Doc is the root node in which the position was resolved.
 func (r *ResolvedPos) Doc() *Node {
 	zero := 0
 	return r.Node(&zero)
 }
 
-// The ancestor node at the given level. `p.node(p.depth)` is the same as
-// `p.parent`.
+// Node returns the ancestor node at the given level. p.node(p.depth) is the
+// same as p.parent.
 func (r *ResolvedPos) Node(depth *int) *Node {
 	return r.Path[r.resolveDepth(depth)*3].(*Node)
 }
 
-// The index into the ancestor at the given level. If this points at the 3rd
-// node in the 2nd paragraph on the top level, for example, p.index(0) is 1 and
-// p.index(1) is 2.
+// Index returns the index into the ancestor at the given level. If this points
+// at the 3rd node in the 2nd paragraph on the top level, for example,
+// p.index(0) is 1 and p.index(1) is 2.
 func (r *ResolvedPos) Index(depth *int) int {
 	return r.Path[r.resolveDepth(depth)*3+1].(int)
 }
 
-// The (absolute) position at the start of the node at the given level.
+// Start is the (absolute) position at the start of the node at the given
+// level.
 func (r *ResolvedPos) Start(depth *int) int {
 	d := r.resolveDepth(depth)
 	if d == 0 {
@@ -78,14 +81,14 @@ func (r *ResolvedPos) Start(depth *int) int {
 	return r.Path[d*3-1].(int) + 1
 }
 
-// The (absolute) position at the end of the node at the given level.
+// End is the (absolute) position at the end of the node at the given level.
 func (r *ResolvedPos) End(depth *int) int {
 	d := r.resolveDepth(depth)
 	return r.Start(&d) + r.Node(&d).Content.Size
 }
 
-// The (absolute) position directly before the wrapping node at the given
-// level, or, when depth is this.depth + 1, the original position.
+// Before is the (absolute) position directly before the wrapping node at the
+// given level, or, when depth is this.depth + 1, the original position.
 func (r *ResolvedPos) Before(depth *int) (int, error) {
 	d := r.resolveDepth(depth)
 	if d == 0 {
@@ -97,8 +100,8 @@ func (r *ResolvedPos) Before(depth *int) (int, error) {
 	return r.Path[d*3-1].(int), nil
 }
 
-// The (absolute) position directly after the wrapping node at the given level,
-// or the original position when depth is this.depth + 1.
+// After is the (absolute) position directly after the wrapping node at the
+// given level, or the original position when depth is this.depth + 1.
 func (r *ResolvedPos) After(depth *int) (int, error) {
 	d := r.resolveDepth(depth)
 	if d == 0 {
@@ -110,8 +113,9 @@ func (r *ResolvedPos) After(depth *int) (int, error) {
 	return r.Path[d*3-1].(int) + r.Path[d*3].(*Node).NodeSize(), nil
 }
 
-// Get the node directly after the position, if any. If the position points
-// into a text node, only the part of that node after the position is returned.
+// NodeAfter gets the node directly after the position, if any. If the position
+// points into a text node, only the part of that node after the position is
+// returned.
 func (r *ResolvedPos) NodeAfter() (*Node, error) {
 	parent := r.Parent()
 	index := r.Index(&r.Depth)
@@ -129,9 +133,9 @@ func (r *ResolvedPos) NodeAfter() (*Node, error) {
 	return child, nil
 }
 
-// Get the node directly before the position, if any. If the position points
-// into a text node, only the part of that node before the position is
-// returned.
+// NodeBefore gets the node directly before the position, if any. If the
+// position points into a text node, only the part of that node before the
+// position is returned.
 func (r *ResolvedPos) NodeBefore() (*Node, error) {
 	index := r.Index(&r.Depth)
 	dOff := r.Pos - r.Path[len(r.Path)-1].(int)
@@ -152,8 +156,8 @@ func (r *ResolvedPos) NodeBefore() (*Node, error) {
 	return child, nil
 }
 
-// The depth up to which this position and the given (non-resolved) position
-// share the same parent nodes.
+// SharedDepth is the depth up to which this position and the given
+// (non-resolved) position share the same parent nodes.
 func (r *ResolvedPos) SharedDepth(pos int) int {
 	for depth := r.Depth; depth > 0; depth-- {
 		if r.Start(&depth) <= pos && r.End(&depth) >= pos {

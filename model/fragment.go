@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// A fragment represents a node's collection of child nodes.
+// Fragment represents a node's collection of child nodes.
 //
 // Like nodes, fragments are persistent data structures, and you should not
 // mutate them or their content. Rather, you create new instances whenever
@@ -16,6 +16,7 @@ type Fragment struct {
 	Size int
 }
 
+// NewFragment is the constructor for Fragment.
 func NewFragment(content []*Node, size ...int) *Fragment {
 	fragment := Fragment{Content: content, Size: 0}
 	if len(size) == 0 {
@@ -28,11 +29,19 @@ func NewFragment(content []*Node, size ...int) *Fragment {
 	return &fragment
 }
 
+// NBCallback is a type of the function used for NodesBetween. The arguments
+// are:
+// - the current node
+// - the current position
+// - the parent node
+// - the index of the current node in the list of its parent children.
+// If the callback returns false, it will prevent NodesBetween to descend
+// into this node.
 type NBCallback func(*Node, int, *Node, int) bool
 
-// Invoke a callback for all descendant nodes between the given two positions
-// (relative to start of this fragment). Doesn't descend into a node when the
-// callback returns `false`.
+// NodesBetween invokes a callback for all descendant nodes between the given
+// two positions (relative to start of this fragment). Doesn't descend into a
+// node when the callback returns false.
 func (f *Fragment) NodesBetween(from, to int, fn NBCallback, nodeStart int, parent *Node) *int {
 	pos := 0
 	for i, child := range f.Content {
@@ -57,7 +66,7 @@ func (f *Fragment) NodesBetween(from, to int, fn NBCallback, nodeStart int, pare
 	return nil
 }
 
-func (f *Fragment) TextBetween(from, to int, args ...string) string {
+func (f *Fragment) textBetween(from, to int, args ...string) string {
 	blockSeparator := ""
 	if len(args) > 0 {
 		blockSeparator = args[0]
@@ -142,7 +151,7 @@ func (f *Fragment) Cut(from int, to ...int) *Fragment {
 	return NewFragment(result, size)
 }
 
-// Compare this fragment to another one.
+// Eq compares this fragment to another one.
 func (f *Fragment) Eq(other *Fragment) bool {
 	if len(f.Content) != len(other.Content) {
 		return false
@@ -155,13 +164,13 @@ func (f *Fragment) Eq(other *Fragment) bool {
 	return true
 }
 
-// The number of child nodes in this fragment.
+// ChildCount returns the number of child nodes in this fragment.
 func (f *Fragment) ChildCount() int {
 	return len(f.Content)
 }
 
-// Get the child node at the given index. Raise an error when the index is out
-// of range.
+// Child gets the child node at the given index. Raise an error when the index
+// is out of range.
 func (f *Fragment) Child(index int) (*Node, error) {
 	if index >= len(f.Content) {
 		return nil, fmt.Errorf("Index %d out of range for %v", index, f)
@@ -169,7 +178,7 @@ func (f *Fragment) Child(index int) (*Node, error) {
 	return f.Content[index], nil
 }
 
-// Get the child node at the given index, if it exists.
+// MaybeChild gets the child node at the given index, if it exists.
 func (f *Fragment) MaybeChild(index int) *Node {
 	if index >= len(f.Content) {
 		return nil
@@ -177,8 +186,8 @@ func (f *Fragment) MaybeChild(index int) *Node {
 	return f.Content[index]
 }
 
-// Find the first position at which this fragment and another fragment differ,
-// or `null` if they are the same.
+// FindDiffStart finds the first position at which this fragment and another
+// fragment differ, or null if they are the same.
 func (f *Fragment) FindDiffStart(other *Fragment, pos ...int) *int {
 	p := 0
 	if len(pos) > 0 {
@@ -187,10 +196,10 @@ func (f *Fragment) FindDiffStart(other *Fragment, pos ...int) *int {
 	return findDiffStart(f, other, p)
 }
 
-// Find the first position, searching from the end, at which this fragment and
-// the given fragment differ, or `null` if they are the same. Since this
-// position will not be the same in both nodes, an object with two separate
-// positions is returned.
+// FindDiffEnd finds the first position, searching from the end, at which this
+// fragment and the given fragment differ, or `null` if they are the same.
+// Since this position will not be the same in both nodes, an object with two
+// separate positions is returned.
 func (f *Fragment) FindDiffEnd(other *Fragment, pos ...int) *DiffEnd {
 	posA := f.Size
 	posB := other.Size
@@ -203,8 +212,8 @@ func (f *Fragment) FindDiffEnd(other *Fragment, pos ...int) *DiffEnd {
 	return findDiffEnd(f, other, posA, posB)
 }
 
-// Find the index and inner offset corresponding to a given relative position
-// in this fragment.
+// findIndex finds the index and inner offset corresponding to a given relative
+// position in this fragment.
 func (f *Fragment) findIndex(pos int, round ...int) (index int, offset int, err error) {
 	if pos == 0 {
 		return 0, pos, nil
@@ -233,7 +242,7 @@ func (f *Fragment) findIndex(pos int, round ...int) (index int, offset int, err 
 	panic(errors.New("Unexpected state"))
 }
 
-// Return a debugging string that describes this fragment.
+// String returns a debugging string that describes this fragment.
 func (f *Fragment) String() string {
 	return fmt.Sprintf("<%s>", f.toStringInner())
 }
@@ -251,8 +260,8 @@ func (f *Fragment) toStringInner() string {
 
 // TODO
 
-// Build a fragment from an array of nodes. Ensures that adjacent text nodes
-// with the same marks are joined together.
+// FragmentFromArray builds a fragment from an array of nodes. Ensures that
+// adjacent text nodes with the same marks are joined together.
 func FragmentFromArray(array []*Node) *Fragment {
 	if len(array) == 0 {
 		return EmptyFragment
@@ -266,7 +275,7 @@ func FragmentFromArray(array []*Node) *Fragment {
 				joined = array[0:i]
 			}
 			was := joined[len(joined)-1].Text
-			joined[len(joined)-1] = node.WithText(*was + *node.Text)
+			joined[len(joined)-1] = node.withText(*was + *node.Text)
 		} else if len(joined) > 0 {
 			joined = append(joined, node)
 		}
@@ -277,9 +286,10 @@ func FragmentFromArray(array []*Node) *Fragment {
 	return NewFragment(joined, size)
 }
 
-// Create a fragment from something that can be interpreted as a set of nodes.
-// For null, it returns the empty fragment. For a fragment, the fragment
-// itself. For a node or array of nodes, a fragment containing those nodes.
+// FragmentFrom creates a fragment from something that can be interpreted as a
+// set of nodes. For null, it returns the empty fragment. For a fragment, the
+// fragment itself. For a node or array of nodes, a fragment containing those
+// nodes.
 func FragmentFrom(nodes interface{}) (*Fragment, error) {
 	if nodes == nil {
 		return EmptyFragment, nil
@@ -295,4 +305,5 @@ func FragmentFrom(nodes interface{}) (*Fragment, error) {
 	return nil, fmt.Errorf("Can not convert %v to a Fragment", nodes)
 }
 
+// EmptyFragment is an empty fragment.
 var EmptyFragment = &Fragment{Content: nil, Size: 0}

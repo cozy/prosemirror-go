@@ -5,7 +5,7 @@ import (
 	"reflect"
 )
 
-// This class represents a node in the tree that makes up a ProseMirror
+// Node class represents a node in the tree that makes up a ProseMirror
 // document. So a document is an instance of Node, with children that are also
 // instances of Node.
 //
@@ -31,14 +31,15 @@ type Node struct {
 	Marks []*Mark
 }
 
+// NewNode is the constructor of Node.
 func NewNode(typ *NodeType, attrs map[string]interface{}, content *Fragment, marks []*Mark) *Node {
 	return &Node{Type: typ, Attrs: attrs, Content: content, Marks: marks}
 }
 
-// The size of this node, as defined by the integer-based indexing scheme. For
-// text nodes, this is the amount of characters. For other leaf nodes, it is
-// one. For non-leaf nodes, it is the size of the content plus two (the start
-// and end token).
+// NodeSize returns the size of this node, as defined by the integer-based
+// indexing scheme. For text nodes, this is the amount of characters. For other
+// leaf nodes, it is one. For non-leaf nodes, it is the size of the content
+// plus two (the start and end token).
 func (n *Node) NodeSize() int {
 	if n.IsText() {
 		return len(*n.Text)
@@ -49,28 +50,28 @@ func (n *Node) NodeSize() int {
 	return 2 + n.Content.Size
 }
 
-// The number of children that the node has.
+// ChildCount returns the number of children that the node has.
 func (n *Node) ChildCount() int {
 	return n.Content.ChildCount()
 }
 
-// Get the child node at the given index. Raises an error when the index is out
-// of range.
+// Child gets the child node at the given index. Raises an error when the index
+// is out of range.
 func (n *Node) Child(index int) (*Node, error) {
 	return n.Content.Child(index)
 }
 
-// Get the child node at the given index, if it exists.
+// MaybeChild gets the child node at the given index, if it exists.
 func (n *Node) MaybeChild(index int) *Node {
 	return n.Content.MaybeChild(index)
 }
 
-// Invoke a callback for all descendant nodes recursively between the given two
-// positions that are relative to start of this node's content. The callback is
-// invoked with the node, its parent-relative position, its parent node, and
-// its child index. When the callback returns false for a given node, that
-// node's children will not be recursed over. The last parameter can be used to
-// specify a starting position to count from.
+// NodesBetween invokes a callback for all descendant nodes recursively between
+// the given two positions that are relative to start of this node's content.
+// The callback is invoked with the node, its parent-relative position, its
+// parent node, and its child index. When the callback returns false for a
+// given node, that node's children will not be recursed over. The last
+// parameter can be used to specify a starting position to count from.
 func (n *Node) NodesBetween(from, to int, fn NBCallback, startPos ...int) {
 	s := 0
 	if len(startPos) > 0 {
@@ -79,7 +80,8 @@ func (n *Node) NodesBetween(from, to int, fn NBCallback, startPos ...int) {
 	n.Content.NodesBetween(from, to, fn, s, n)
 }
 
-// Concatenates all the text nodes found in this fragment and its children.
+// TextContent concatenates all the text nodes found in this fragment and its
+// children.
 func (n *Node) TextContent() string {
 	if n.IsText() {
 		return *n.Text
@@ -87,17 +89,18 @@ func (n *Node) TextContent() string {
 	return n.TextBetween(0, n.Content.Size, "")
 }
 
-// Get all text between positions from and to. When blockSeparator is given, it
-// will be inserted whenever a new block node is started. When leafText is
-// given, it'll be inserted for every non-text leaf node encountered.
+// TextBetween gets all text between positions from and to. When blockSeparator
+// is given, it will be inserted whenever a new block node is started. When
+// leafText is given, it'll be inserted for every non-text leaf node
+// encountered.
 func (n *Node) TextBetween(from, to int, args ...string) string {
 	if n.IsText() {
 		return (*n.Text)[from:to]
 	}
-	return n.Content.TextBetween(from, to, args...)
+	return n.Content.textBetween(from, to, args...)
 }
 
-// Test whether two nodes represent the same piece of document.
+// Eq tests whether two nodes represent the same piece of document.
 func (n *Node) Eq(other *Node) bool {
 	if n == other {
 		return true
@@ -105,14 +108,15 @@ func (n *Node) Eq(other *Node) bool {
 	return n.SameMarkup(other) && n.Content.Eq(other.Content)
 }
 
-// Compare the markup (type, attributes, and marks) of this node to those of
-// another. Returns true if both have the same markup.
+// SameMarkup compares the markup (type, attributes, and marks) of this node to
+// those of another. Returns true if both have the same markup.
 func (n *Node) SameMarkup(other *Node) bool {
 	return n.HasMarkup(other.Type, other.Attrs, other.Marks)
 }
 
-// Check whether this node's markup correspond to the given type, attributes,
-// and marks.
+// HasMarkup checks whether this node's markup correspond to the given type,
+// attributes, and marks.
+//
 // :: (NodeType, ?Object, ?[Mark]) → bool
 func (n *Node) HasMarkup(typ *NodeType, args ...interface{}) bool {
 	if n.Type != typ {
@@ -149,8 +153,8 @@ func (n *Node) HasMarkup(typ *NodeType, args ...interface{}) bool {
 	return SameMarkSet(n.Marks, marks)
 }
 
-// Create a new node with the same markup as this node, containing
-// the given content (or empty, if no content is given).
+// Copy creates a new node with the same markup as this node, containing the
+// given content (or empty, if no content is given).
 func (n *Node) Copy(content ...*Fragment) *Node {
 	c := EmptyFragment
 	if len(content) > 0 {
@@ -159,7 +163,7 @@ func (n *Node) Copy(content ...*Fragment) *Node {
 	return NewNode(n.Type, n.Attrs, c, n.Marks)
 }
 
-// Create a copy of this node, with the given set of marks instead of the
+// Mark creates a copy of this node, with the given set of marks instead of the
 // node's own marks.
 func (n *Node) Mark(marks []*Mark) *Node {
 	if sameMarks(n.Marks, marks) {
@@ -171,8 +175,8 @@ func (n *Node) Mark(marks []*Mark) *Node {
 	return NewNode(n.Type, n.Attrs, n.Content, marks)
 }
 
-// Create a copy of this node with only the content between the given
-// positions. If `to` is not given, it defaults to the end of the node.
+// Cut creates a copy of this node with only the content between the given
+// positions. If to is not given, it defaults to the end of the node.
 func (n *Node) Cut(from int, to ...int) *Node {
 	if n.IsText() {
 		t := len(*n.Text)
@@ -182,7 +186,7 @@ func (n *Node) Cut(from int, to ...int) *Node {
 		if from == 0 && t == len(*n.Text) {
 			return n
 		}
-		return n.WithText((*n.Text)[from:t])
+		return n.withText((*n.Text)[from:t])
 	}
 	if len(to) == 0 {
 		return n.Copy(n.Content.Cut(from))
@@ -194,8 +198,8 @@ func (n *Node) Cut(from int, to ...int) *Node {
 	return n.Copy(n.Content.Cut(from, t))
 }
 
-// Cut out the part of the document between the given positions, and return it
-// as a Slice object.
+// Slice cuts out the part of the document between the given positions, and
+// return it as a Slice object.
 func (n *Node) Slice(from int, args ...interface{}) *Slice {
 	to := n.Content.Size
 	if len(args) > 0 {
@@ -236,11 +240,7 @@ func (n *Node) Resolve(pos int) (*ResolvedPos, error) {
 	return resolvePosCached(n, pos)
 }
 
-func (n *Node) ResolveNoCache(pos int) (*ResolvedPos, error) {
-	return resolvePos(n, pos)
-}
-
-// Find the node directly after the given position.
+// NodeAt finds the node directly after the given position.
 func (n *Node) NodeAt(pos int) *Node {
 	node := n
 	for {
@@ -259,17 +259,17 @@ func (n *Node) NodeAt(pos int) *Node {
 	}
 }
 
-// True when this is a block (non-inline node)
+// IsBlock returns true when this is a block (non-inline node)
 func (n *Node) IsBlock() bool {
 	return n.Type.IsBlock()
 }
 
-// True when this is a leaf node.
+// IsLeaf returns true when this is a leaf node.
 func (n *Node) IsLeaf() bool {
 	return n.Type.IsLeaf()
 }
 
-// Return a string representation of this node for debugging purposes.
+// String returns a string representation of this node for debugging purposes.
 func (n *Node) String() string {
 	if n.Type.Spec.ToDebugString != nil {
 		return n.Type.Spec.ToDebugString(n)
@@ -283,16 +283,17 @@ func (n *Node) String() string {
 	return wrapMarks(n.Marks, name)
 }
 
+// NewTextNode is a constructor for text Node.
 func NewTextNode(typ *NodeType, attrs map[string]interface{}, text string, marks []*Mark) *Node {
 	return &Node{Type: typ, Attrs: attrs, Text: &text, Content: EmptyFragment, Marks: marks}
 }
 
-// True when this is a text node.
+// IsText returns true when this is a text node.
 func (n *Node) IsText() bool {
 	return n.Text != nil
 }
 
-func (n *Node) WithText(text string) *Node {
+func (n *Node) withText(text string) *Node {
 	if text == *n.Text {
 		return n
 	}

@@ -5,7 +5,7 @@ import (
 	"reflect"
 )
 
-// A mark is a piece of information that can be attached to a node, such as it
+// Mark is a piece of information that can be attached to a node, such as it
 // being emphasized, in code font, or a link. It has a type and optionally a
 // set of attributes that provide further information (such as the target of
 // the link). Marks are created through a Schema, which controls which types
@@ -15,14 +15,15 @@ type Mark struct {
 	Attrs map[string]interface{}
 }
 
+// NewMark is the constructor for Mark.
 func NewMark(typ *MarkType, attrs map[string]interface{}) *Mark {
 	return &Mark{Type: typ, Attrs: attrs}
 }
 
-// Given a set of marks, create a new set which contains this one as well, in
-// the right position. If this mark is already in the set, the set itself is
-// returned. If any marks that are set to be exclusive with this mark are
-// present, those are replaced by this one.
+// AddToSet , when given a set of marks, creates a new set which contains this
+// one as well, in the right position. If this mark is already in the set, the
+// set itself is returned. If any marks that are set to be exclusive with this
+// mark are present, those are replaced by this one.
 func (m *Mark) AddToSet(set []*Mark) []*Mark {
 	var cpy []*Mark
 	placed := false
@@ -61,8 +62,8 @@ func (m *Mark) AddToSet(set []*Mark) []*Mark {
 	return cpy
 }
 
-// Remove this mark from the given set, returning a new set. If this mark is
-// not in the set, the set itself is returned.
+// RemoveFromSet removes this mark from the given set, returning a new set. If
+// this mark is not in the set, the set itself is returned.
 func (m *Mark) RemoveFromSet(set []*Mark) []*Mark {
 	for i, other := range set {
 		if m.Eq(other) {
@@ -75,7 +76,7 @@ func (m *Mark) RemoveFromSet(set []*Mark) []*Mark {
 	return set
 }
 
-// Test whether this mark is in the given set of marks.
+// IsInSet tests whether this mark is in the given set of marks.
 func (m *Mark) IsInSet(set []*Mark) bool {
 	for _, other := range set {
 		if m.Eq(other) {
@@ -85,7 +86,7 @@ func (m *Mark) IsInSet(set []*Mark) bool {
 	return false
 }
 
-// Test whether this mark has the same type and attributes as another mark.
+// Eq tests whether this mark has the same type and attributes as another mark.
 func (m *Mark) Eq(other *Mark) bool {
 	if m == other {
 		return true
@@ -113,7 +114,7 @@ func sameMarks(a, b []*Mark) bool {
 	return true
 }
 
-// Test whether two sets of marks are identical.
+// SameMarkSet tests whether two sets of marks are identical.
 func SameMarkSet(a, b []*Mark) bool {
 	if len(a) != len(b) {
 		return false
@@ -126,8 +127,8 @@ func SameMarkSet(a, b []*Mark) bool {
 	return true
 }
 
-// Create a properly sorted mark set from null, a single mark, or an unsorted
-// array of marks.
+// MarkSetFrom creates a properly sorted mark set from null, a single mark, or
+// an unsorted array of marks.
 func MarkSetFrom(marks ...interface{}) []*Mark {
 	if len(marks) == 0 {
 		return NoMarks

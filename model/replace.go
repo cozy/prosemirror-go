@@ -2,9 +2,9 @@ package model
 
 import "fmt"
 
-// A slice represents a piece cut out of a larger document. It stores not only
-// a fragment, but also the depth up to which nodes on both side are ‘open’
-// (cut through).
+// Slice represents a piece cut out of a larger document. It stores not only a
+// fragment, but also the depth up to which nodes on both side are ‘open’ (cut
+// through).
 type Slice struct {
 	// Fragment The slice's content.
 	Content *Fragment
@@ -14,10 +14,10 @@ type Slice struct {
 	OpenEnd int
 }
 
-// Create a slice. When specifying a non-zero open depth, you must make sure
-// that there are nodes of at least that depth at the appropriate side of the
-// fragment—i.e. if the fragment is an empty paragraph node, openStart and
-// openEnd can't be greater than 1.
+// NewSlice creates a slice. When specifying a non-zero open depth, you must
+// make sure that there are nodes of at least that depth at the appropriate
+// side of the fragment—i.e. if the fragment is an empty paragraph node,
+// openStart and openEnd can't be greater than 1.
 //
 // It is not necessary for the content of open nodes to conform to the schema's
 // content constraints, though it should be a valid start/end/middle for such a
@@ -30,18 +30,20 @@ func NewSlice(content *Fragment, openStart, openEnd int) *Slice {
 	}
 }
 
-// The size this slice would add when inserted into a document.
+// Size returns the size this slice would add when inserted into a document.
 func (s *Slice) Size() int {
 	return s.Content.Size - s.OpenStart - s.OpenEnd
 }
 
-// Tests whether this slice is equal to another slice.
+// Eq tests whether this slice is equal to another slice.
 func (s *Slice) Eq(other *Slice) bool {
 	return s.Content.Eq(other.Content) && s.OpenStart == other.OpenStart && s.OpenEnd == other.OpenEnd
 }
 
+// String returns a string representation of this slice.
 func (s *Slice) String() string {
 	return fmt.Sprintf("%s(%d,%d)", s.Content.String(), s.OpenStart, s.OpenEnd)
 }
 
+// EmptySlice is an empty slice.
 var EmptySlice = NewSlice(EmptyFragment, 0, 0)

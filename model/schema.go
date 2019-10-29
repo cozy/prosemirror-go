@@ -30,7 +30,7 @@ func initAttrs(attrs map[string]*AttributeSpec) map[string]*Attribute {
 	return result
 }
 
-// Node types are objects allocated once per Schema and used to tag Node
+// NodeType are objects allocated once per Schema and used to tag Node
 // instances. They contain information about the node type, such as its name
 // and what kind of node it represents.
 type NodeType struct {
@@ -45,6 +45,7 @@ type NodeType struct {
 	// TODO
 }
 
+// NewNodeType is the constructor for NodeType.
 func NewNodeType(name string, schema *Schema, spec *NodeSpec) *NodeType {
 	attrs := initAttrs(spec.Attrs)
 	return &NodeType{
@@ -57,16 +58,17 @@ func NewNodeType(name string, schema *Schema, spec *NodeSpec) *NodeType {
 	}
 }
 
-// True if this is the text node type.
+// IsText returns true if this is the text node type.
 func (nt *NodeType) IsText() bool {
 	return nt.Name == "text"
 }
 
-// True if this is a block type
+// IsBlock returns true if this is a block type
 func (nt *NodeType) IsBlock() bool {
 	return nt.Name != "text" // TODO !spec.inline
 }
 
+// IsLeaf returns true for node types that allow no content.
 func (nt *NodeType) IsLeaf() bool {
 	return false // TODO
 }
@@ -90,8 +92,8 @@ func (nt *NodeType) Create(attrs map[string]interface{}, content interface{}, ma
 	return NewNode(nt, nt.computeAttrs(attrs), fragment, MarkSetFrom(marks)), nil
 }
 
-// Like create, but check the given content against the node type's content
-// restrictions, and throw an error if it doesn't match.
+// CreateChecked is like create, but check the given content against the node
+// type's content restrictions, and throw an error if it doesn't match.
 //
 // :: (?Object, ?union<Fragment, Node, [Node]>, ?[Mark]) → Node
 func (nt *NodeType) CreateChecked(args ...interface{}) (*Node, error) {
@@ -117,8 +119,8 @@ func (nt *NodeType) CreateChecked(args ...interface{}) (*Node, error) {
 	return NewNode(nt, nt.computeAttrs(attrs), fragment, MarkSetFrom(marks)), nil
 }
 
-// Returns true if the given fragment is valid content for this node type with
-// the given attributes.
+// ValidContent returns true if the given fragment is valid content for this
+// node type with the given attributes.
 func (nt *NodeType) ValidContent(content *Fragment) bool {
 	return true // TODO
 }
@@ -148,6 +150,7 @@ type Attribute struct {
 	Default    interface{}
 }
 
+// NewAttribute is the constructor for Attribute.
 func NewAttribute(options *AttributeSpec) *Attribute {
 	if options == nil {
 		return &Attribute{HasDefault: false, Default: nil}
@@ -155,13 +158,9 @@ func NewAttribute(options *AttributeSpec) *Attribute {
 	return &Attribute{HasDefault: true, Default: options.Default}
 }
 
-func (a *Attribute) IsRequired() bool {
-	return !a.HasDefault
-}
-
-// Like nodes, marks (which are associated with nodes to signify things like
-// emphasis or being part of a link) are tagged with type objects, which are
-// instantiated once per Schema.
+// MarkType is the type object for marks. Like nodes, marks (which are
+// associated with nodes to signify things like emphasis or being part of a
+// link) are tagged with type objects, which are instantiated once per Schema.
 type MarkType struct {
 	// The name of the mark type.
 	Name string
@@ -174,6 +173,7 @@ type MarkType struct {
 	// TODO
 }
 
+// NewMarkType is the constructor for MarkType.
 func NewMarkType(name string, rank int, schema *Schema, spec *MarkSpec) *MarkType {
 	return &MarkType{
 		Name:   name,
@@ -200,7 +200,7 @@ func compileMarkType(marks []*MarkSpec, schema *Schema) map[string]*MarkType {
 	return result
 }
 
-// Tests whether there is a mark of this type in the given set.
+// IsInSet tests whether there is a mark of this type in the given set.
 func (mt *MarkType) IsInSet(set []*Mark) *Mark {
 	for _, mark := range set {
 		if mark.Type == mt {
@@ -210,7 +210,7 @@ func (mt *MarkType) IsInSet(set []*Mark) *Mark {
 	return nil
 }
 
-// Queries whether a given mark type is excluded by this one.
+// Excludes queries whether a given mark type is excluded by this one.
 func (mt *MarkType) Excludes(other *MarkType) bool {
 	if len(mt.Excluded) == 0 {
 		return false
@@ -225,7 +225,8 @@ func (mt *MarkType) Excludes(other *MarkType) bool {
 
 // TODO add other methods to MarkType
 
-// An object describing a schema, as passed to the Schema constructor.
+// SchemaSpec is an object describing a schema, as passed to the Schema
+// constructor.
 type SchemaSpec struct {
 	// The node types in this schema. Maps names to NodeSpec objects that
 	// describe the node type associated with that name. Their order is
@@ -242,6 +243,7 @@ type SchemaSpec struct {
 	TopNode string
 }
 
+// NodeSpec is an object describing a node type.
 type NodeSpec struct {
 	// In JavaScript, the NodeSpec are kept in an OrderedMap. In Go, the map
 	// doesn't preserve the order of the keys. Instead, an array is used, and
@@ -276,6 +278,7 @@ type NodeSpec struct {
 	// TODO there are more fields, but are they useful on the server?
 }
 
+// MarkSpec is an object describing a mark type.
 type MarkSpec struct {
 	// In JavaScript, the MarkSpec are kept in an OrderedMap. In Go, the map
 	// doesn't preserve the order of the keys. Instead, an array is used, and
@@ -310,7 +313,7 @@ type MarkSpec struct {
 	// TODO there are more fields, but are they useful on the server?
 }
 
-// Used to define attributes on nodes or marks.
+// AttributeSpec is used to define attributes on nodes or marks.
 type AttributeSpec struct {
 	// The default value for this attribute, to use when no explicit value is
 	// provided. Attributes that have no default must be provided whenever a
@@ -318,9 +321,9 @@ type AttributeSpec struct {
 	Default interface{}
 }
 
-// A document schema. Holds node and mark type objects for the nodes and marks
-// that may occur in conforming documents, and provides functionality for
-// creating and deserializing such documents.
+// Schema is a a document schema: it holds node and mark type objects for the
+// nodes and marks that may occur in conforming documents, and provides
+// functionality for creating and deserializing such documents.
 type Schema struct {
 	// The spec on which the schema is based.
 	Spec *SchemaSpec
@@ -332,7 +335,7 @@ type Schema struct {
 	Marks map[string]*MarkType
 }
 
-// Construct a schema from a schema specification.
+// NewSchema constructs a schema from a schema specification.
 // TODO should it take a SchemaSpec or a map[string]interface{} for spec parameter?
 func NewSchema(spec *SchemaSpec) (*Schema, error) {
 	schema := Schema{
@@ -365,7 +368,7 @@ func NewSchema(spec *SchemaSpec) (*Schema, error) {
 	return &schema, nil
 }
 
-// Create a node in this schema. The type may be a string or a NodeType
+// Node creates a node in this schema. The type may be a string or a NodeType
 // instance. Attributes will be extended with defaults, content may be a
 // Fragment, null, a Node, or an array of nodes.
 //
@@ -394,7 +397,7 @@ func (s *Schema) Node(typ interface{}, args ...interface{}) (*Node, error) {
 	return t.CreateChecked(attrs, content, marks)
 }
 
-// Create a text node in the schema. Empty text nodes are not allowed.
+// Text creates a text node in the schema. Empty text nodes are not allowed.
 func (s *Schema) Text(text string, marks ...[]*Mark) *Node {
 	typ := s.Nodes["text"]
 	set := NoMarks
@@ -404,7 +407,7 @@ func (s *Schema) Text(text string, marks ...[]*Mark) *Node {
 	return NewTextNode(typ, nil, text, set) // TODO type.defaultAttrs instead of nil
 }
 
-// Create a mark with the given type and attributes.
+// Mark creates a mark with the given type and attributes.
 func (s *Schema) Mark(typ interface{}, args ...map[string]interface{}) *Mark {
 	var t *MarkType
 	switch typ := typ.(type) {
