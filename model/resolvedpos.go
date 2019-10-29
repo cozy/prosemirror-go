@@ -63,8 +63,8 @@ func (r *ResolvedPos) Node(depth *int) *Node {
 }
 
 // The index into the ancestor at the given level. If this points at the 3rd
-// node in the 2nd paragraph on the top level, for example, p.index(0) is 2 and
-// p.index(1) is 3.
+// node in the 2nd paragraph on the top level, for example, p.index(0) is 1 and
+// p.index(1) is 2.
 func (r *ResolvedPos) Index(depth *int) int {
 	return r.Path[r.resolveDepth(depth)*3+1].(int)
 }
