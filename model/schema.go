@@ -42,6 +42,10 @@ type NodeType struct {
 	Spec         *NodeSpec
 	Attrs        map[string]*Attribute
 	DefaultAttrs map[string]interface{}
+	// The starting match of the node type's content expression.
+	ContentMatch *ContentMatch
+	// True if this node type has inline content.
+	InlineContent bool
 	// TODO
 }
 
@@ -49,11 +53,13 @@ type NodeType struct {
 func NewNodeType(name string, schema *Schema, spec *NodeSpec) *NodeType {
 	attrs := initAttrs(spec.Attrs)
 	return &NodeType{
-		Name:         name,
-		Schema:       schema,
-		Spec:         spec,
-		Attrs:        attrs,
-		DefaultAttrs: defaultAttrs(attrs),
+		Name:          name,
+		Schema:        schema,
+		Spec:          spec,
+		Attrs:         attrs,
+		DefaultAttrs:  defaultAttrs(attrs),
+		ContentMatch:  nil,
+		InlineContent: false,
 		// TODO
 	}
 }
@@ -63,18 +69,23 @@ func (nt *NodeType) IsText() bool {
 	return nt.Name == "text"
 }
 
-// IsBlock returns true if this is a block type
+// IsBlock returns true if this is a block type.
 func (nt *NodeType) IsBlock() bool {
-	return nt.Name != "text" // TODO !spec.inline
+	return !nt.Spec.Inline && nt.Name != "text"
+}
+
+// IsInline returns true if this is an inline type.
+func (nt *NodeType) IsInline() bool {
+	return !nt.IsBlock()
 }
 
 // IsLeaf returns true for node types that allow no content.
 func (nt *NodeType) IsLeaf() bool {
-	return false // TODO
+	return nt.ContentMatch == EmptyContentMatch
 }
 
 func (nt *NodeType) compatibleContent(other *NodeType) bool {
-	return nt == other // TODO
+	return nt == other || nt.ContentMatch.compatible(other.ContentMatch)
 }
 
 func (nt *NodeType) computeAttrs(attrs map[string]interface{}) map[string]interface{} {
@@ -134,6 +145,20 @@ func (nt *NodeType) CreateChecked(args ...interface{}) (*Node, error) {
 // ValidContent returns true if the given fragment is valid content for this
 // node type with the given attributes.
 func (nt *NodeType) ValidContent(content *Fragment) bool {
+	result := nt.ContentMatch.MatchFragment(content)
+	if result == nil || !result.ValidEnd {
+		return false
+	}
+	for _, child := range content.Content {
+		if nt.AllowsMarks(child.Marks) {
+			return false
+		}
+	}
+	return true
+}
+
+// AllowsMarks tests whether the given set of marks are allowed in this node.
+func (nt *NodeType) AllowsMarks(marks []*Mark) bool {
 	return true // TODO
 }
 
@@ -362,7 +387,30 @@ func NewSchema(spec *SchemaSpec) (*Schema, error) {
 	}
 	schema.Nodes = nodes
 	schema.Marks = compileMarkType(spec.Marks, &schema)
-	// TODO
+
+	contentExprCache := map[string]*ContentMatch{}
+	for prop, typ := range schema.Nodes {
+		if _, ok := schema.Marks[prop]; ok {
+			return nil, fmt.Errorf("%s cann not be both a node and a mark", prop)
+		}
+		contentExpr := typ.Spec.Content
+		// markExpr := typ.Spec.Marks
+		cm, ok := contentExprCache[contentExpr]
+		if !ok {
+			cm, err = parseContentMatch(contentExpr, schema.Nodes)
+			if err != nil {
+				return nil, err
+			}
+			contentExprCache[contentExpr] = cm
+		}
+		typ.ContentMatch = cm
+		typ.InlineContent = typ.ContentMatch.inlineContent()
+		// TODO
+		// type.markSet = markExpr == "_" ? null :
+		//   markExpr ? gatherMarks(this, markExpr.split(" ")) :
+		//   markExpr == "" || !type.inlineContent ? [] : null
+	}
+
 	for _, typ := range schema.Marks {
 		excl := typ.Spec.Excludes
 		if excl == nil {
