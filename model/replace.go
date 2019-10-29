@@ -125,7 +125,7 @@ func joinable(before, after *ResolvedPos, depth int) (*Node, error) {
 
 func addNode(child *Node, target []*Node) []*Node {
 	last := len(target) - 1
-	if last > 0 && child.IsText() && child.SameMarkup(target[last]) {
+	if last >= 0 && child.IsText() && child.SameMarkup(target[last]) {
 		target[last] = child.withText(*target[last].Text + *child.Text)
 	} else {
 		target = append(target, child)
@@ -269,7 +269,7 @@ func replaceTwoWay(from, to *ResolvedPos, depth int) (*Fragment, error) {
 		if err != nil {
 			return nil, err
 		}
-		addNode(closed, content)
+		content = addNode(closed, content)
 	}
 	content, err = addRange(to, nil, depth, content)
 	if err != nil {
