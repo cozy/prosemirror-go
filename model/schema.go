@@ -40,6 +40,7 @@ type NodeType struct {
 	Schema *Schema
 	// The spec that this type is based on
 	Spec         *NodeSpec
+	Groups       []string
 	Attrs        map[string]*Attribute
 	DefaultAttrs map[string]interface{}
 	// The starting match of the node type's content expression.
@@ -56,6 +57,7 @@ func NewNodeType(name string, schema *Schema, spec *NodeSpec) *NodeType {
 		Name:          name,
 		Schema:        schema,
 		Spec:          spec,
+		Groups:        strings.Split(spec.Group, " "),
 		Attrs:         attrs,
 		DefaultAttrs:  defaultAttrs(attrs),
 		ContentMatch:  nil,

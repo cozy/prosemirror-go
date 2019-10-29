@@ -53,8 +53,6 @@ var Nodes = []*model.NodeSpec{
 
 	// A hard line break, represented in the DOM as <br>.
 	{Key: "hard_break", Group: "inline"},
-
-	// TODO code, defining, selectable, draggable, parseDOM, toDOM
 }
 
 // Marks are the specs for the marks in the schema.
