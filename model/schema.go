@@ -98,16 +98,24 @@ func (nt *NodeType) Create(attrs map[string]interface{}, content interface{}, ma
 // :: (?Object, ?union<Fragment, Node, [Node]>, ?[Mark]) → Node
 func (nt *NodeType) CreateChecked(args ...interface{}) (*Node, error) {
 	var attrs map[string]interface{}
-	if len(args) > 0 {
-		attrs, _ = args[0].(map[string]interface{})
+	if len(args) > 0 && args[0] != nil {
+		arg, ok := args[0].(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("Invalid type for attrs: %v (%T)", args[0], args[0])
+		}
+		attrs = arg
 	}
 	var content interface{}
 	if len(args) > 1 {
 		content = args[1]
 	}
 	var marks []*Mark
-	if len(args) > 2 {
-		marks, _ = args[2].([]*Mark)
+	if len(args) > 2 && args[2] != nil {
+		arg, ok := args[2].([]*Mark)
+		if !ok {
+			return nil, fmt.Errorf("Invalid type for marks: %v (%T)", args[2], args[2])
+		}
+		marks = arg
 	}
 	fragment, err := FragmentFrom(content)
 	if err != nil {
@@ -391,9 +399,25 @@ func (s *Schema) Node(typ interface{}, args ...interface{}) (*Node, error) {
 		return nil, fmt.Errorf("Invalid node type: %v (%T)", typ, typ)
 	}
 	var attrs map[string]interface{}
+	if len(args) > 0 && args[0] != nil {
+		arg, ok := args[0].(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("Invalid type for attrs: %v (%T)", args[0], args[0])
+		}
+		attrs = arg
+	}
 	var content interface{}
+	if len(args) > 1 {
+		content = args[1]
+	}
 	var marks []*Mark
-	// TODO args
+	if len(args) > 2 && args[2] != nil {
+		arg, ok := args[2].([]*Mark)
+		if !ok {
+			return nil, fmt.Errorf("Invalid type for marks: %v (%T)", args[2], args[2])
+		}
+		marks = arg
+	}
 	return t.CreateChecked(attrs, content, marks)
 }
 

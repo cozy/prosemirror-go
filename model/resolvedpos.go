@@ -49,68 +49,98 @@ func (r *ResolvedPos) resolveDepth(val *int) int {
 // if a position points into a text node, that node is not considered the
 // parent—text nodes are ‘flat’ in this model, and have no content.
 func (r *ResolvedPos) Parent() *Node {
-	return r.Node(&r.Depth)
+	return r.Node(r.Depth)
 }
 
 // Doc is the root node in which the position was resolved.
 func (r *ResolvedPos) Doc() *Node {
-	zero := 0
-	return r.Node(&zero)
+	return r.Node(0)
 }
 
 // Node returns the ancestor node at the given level. p.node(p.depth) is the
 // same as p.parent.
-func (r *ResolvedPos) Node(depth *int) *Node {
-	return r.Path[r.resolveDepth(depth)*3].(*Node)
+func (r *ResolvedPos) Node(depth ...int) *Node {
+	var d *int
+	if len(depth) > 0 {
+		d = &depth[0]
+	}
+	return r.Path[r.resolveDepth(d)*3].(*Node)
 }
 
 // Index returns the index into the ancestor at the given level. If this points
 // at the 3rd node in the 2nd paragraph on the top level, for example,
 // p.index(0) is 1 and p.index(1) is 2.
-func (r *ResolvedPos) Index(depth *int) int {
-	return r.Path[r.resolveDepth(depth)*3+1].(int)
+func (r *ResolvedPos) Index(depth ...int) int {
+	var d *int
+	if len(depth) > 0 {
+		d = &depth[0]
+	}
+	return r.Path[r.resolveDepth(d)*3+1].(int)
 }
 
 // Start is the (absolute) position at the start of the node at the given
 // level.
-func (r *ResolvedPos) Start(depth *int) int {
-	d := r.resolveDepth(depth)
-	if d == 0 {
+func (r *ResolvedPos) Start(depth ...int) int {
+	var d *int
+	if len(depth) > 0 {
+		d = &depth[0]
+	}
+	rd := r.resolveDepth(d)
+	if rd == 0 {
 		return 0
 	}
-	return r.Path[d*3-1].(int) + 1
+	return r.Path[rd*3-1].(int) + 1
 }
 
 // End is the (absolute) position at the end of the node at the given level.
-func (r *ResolvedPos) End(depth *int) int {
-	d := r.resolveDepth(depth)
-	return r.Start(&d) + r.Node(&d).Content.Size
+func (r *ResolvedPos) End(depth ...int) int {
+	var d *int
+	if len(depth) > 0 {
+		d = &depth[0]
+	}
+	rd := r.resolveDepth(d)
+	return r.Start(rd) + r.Node(rd).Content.Size
 }
 
 // Before is the (absolute) position directly before the wrapping node at the
 // given level, or, when depth is this.depth + 1, the original position.
-func (r *ResolvedPos) Before(depth *int) (int, error) {
-	d := r.resolveDepth(depth)
-	if d == 0 {
+func (r *ResolvedPos) Before(depth ...int) (int, error) {
+	var d *int
+	if len(depth) > 0 {
+		d = &depth[0]
+	}
+	rd := r.resolveDepth(d)
+	if rd == 0 {
 		return 0, errors.New("There is no position before the top-level node") // TODO RangeError
 	}
-	if d == r.Depth+1 {
+	if rd == r.Depth+1 {
 		return r.Pos, nil
 	}
-	return r.Path[d*3-1].(int), nil
+	return r.Path[rd*3-1].(int), nil
 }
 
 // After is the (absolute) position directly after the wrapping node at the
 // given level, or the original position when depth is this.depth + 1.
-func (r *ResolvedPos) After(depth *int) (int, error) {
-	d := r.resolveDepth(depth)
-	if d == 0 {
+func (r *ResolvedPos) After(depth ...int) (int, error) {
+	var d *int
+	if len(depth) > 0 {
+		d = &depth[0]
+	}
+	rd := r.resolveDepth(d)
+	if rd == 0 {
 		return 0, errors.New("There is no position after the top-level node") // TODO RangeError
 	}
-	if d == r.Depth+1 {
+	if rd == r.Depth+1 {
 		return r.Pos, nil
 	}
-	return r.Path[d*3-1].(int) + r.Path[d*3].(*Node).NodeSize(), nil
+	return r.Path[rd*3-1].(int) + r.Path[rd*3].(*Node).NodeSize(), nil
+}
+
+// TextOffset returns, when this position points into a text node, the distance
+// between the position and the start of the text node. Will be zero for
+// positions that point between nodes.
+func (r *ResolvedPos) TextOffset() int {
+	return r.Pos - r.Path[len(r.Path)-1].(int)
 }
 
 // NodeAfter gets the node directly after the position, if any. If the position
@@ -118,7 +148,7 @@ func (r *ResolvedPos) After(depth *int) (int, error) {
 // returned.
 func (r *ResolvedPos) NodeAfter() (*Node, error) {
 	parent := r.Parent()
-	index := r.Index(&r.Depth)
+	index := r.Index(r.Depth)
 	if index == parent.ChildCount() {
 		return nil, nil
 	}
@@ -137,7 +167,7 @@ func (r *ResolvedPos) NodeAfter() (*Node, error) {
 // position points into a text node, only the part of that node before the
 // position is returned.
 func (r *ResolvedPos) NodeBefore() (*Node, error) {
-	index := r.Index(&r.Depth)
+	index := r.Index(r.Depth)
 	dOff := r.Pos - r.Path[len(r.Path)-1].(int)
 	if dOff > 0 {
 		child, err := r.Parent().Child(index)
@@ -156,11 +186,52 @@ func (r *ResolvedPos) NodeBefore() (*Node, error) {
 	return child, nil
 }
 
+// Marks gets the marks at this position, factoring in the surrounding marks'
+// inclusive property. If the position is at the start of a non-empty node, the
+// marks of the node after it (if any) are returned.
+func (r *ResolvedPos) Marks() []*Mark {
+	parent := r.Parent()
+	index := r.Index()
+
+	// In an empty parent, return the empty array
+	if parent.Content.Size == 0 {
+		return NoMarks
+	}
+
+	// When inside a text node, just return the text node's marks
+	if r.TextOffset() > 0 {
+		child, err := parent.Child(index)
+		if err != nil {
+			panic(err)
+		}
+		return child.Marks
+	}
+
+	main := parent.MaybeChild(index - 1)
+	other := parent.MaybeChild(index)
+	// If the after flag is true or there is no node before, make the node
+	// after this position the main reference.
+	if main == nil {
+		main, other = other, main
+	}
+
+	// Use all marks in the main node, except those that have inclusive set to
+	// false and are not present in the other node.
+	marks := main.Marks
+	for _, m := range main.Marks {
+		if (m.Type.Spec.Inclusive != nil && !*m.Type.Spec.Inclusive) &&
+			(other == nil || !m.IsInSet(other.Marks)) {
+			marks = m.RemoveFromSet(marks)
+		}
+	}
+	return marks
+}
+
 // SharedDepth is the depth up to which this position and the given
 // (non-resolved) position share the same parent nodes.
 func (r *ResolvedPos) SharedDepth(pos int) int {
 	for depth := r.Depth; depth > 0; depth-- {
-		if r.Start(&depth) <= pos && r.End(&depth) >= pos {
+		if r.Start(depth) <= pos && r.End(depth) >= pos {
 			return depth
 		}
 	}

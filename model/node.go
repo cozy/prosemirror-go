@@ -63,6 +63,9 @@ func (n *Node) Child(index int) (*Node, error) {
 
 // MaybeChild gets the child node at the given index, if it exists.
 func (n *Node) MaybeChild(index int) *Node {
+	if index < 0 {
+		return nil
+	}
 	return n.Content.MaybeChild(index)
 }
 
@@ -228,8 +231,8 @@ func (n *Node) Slice(from int, args ...interface{}) *Slice {
 	if !includeParents {
 		depth = resFrom.SharedDepth(to)
 	}
-	start := resFrom.Start(&depth)
-	node := resFrom.Node(&depth)
+	start := resFrom.Start(depth)
+	node := resFrom.Node(depth)
 	content := node.Content.Cut(resFrom.Pos-start, resTo.Pos-start)
 	return NewSlice(content, resFrom.Depth-depth, resTo.Depth-depth)
 }

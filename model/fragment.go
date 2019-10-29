@@ -299,6 +299,16 @@ func FragmentFrom(nodes interface{}) (*Fragment, error) {
 		return nodes, nil
 	case []*Node:
 		return FragmentFromArray(nodes), nil
+	case []interface{}:
+		array := make([]*Node, len(nodes))
+		for i := range nodes {
+			n, ok := nodes[i].(*Node)
+			if !ok {
+				return nil, fmt.Errorf("Invalid type for FragmentFrom: %#v", nodes)
+			}
+			array[i] = n
+		}
+		return FragmentFromArray(array), nil
 	case *Node:
 		return NewFragment([]*Node{nodes}, nodes.NodeSize()), nil
 	}

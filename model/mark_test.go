@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	. "github.com/cozy/prosemirror-go/model"
+	"github.com/cozy/prosemirror-go/test/builder"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -181,4 +182,97 @@ func TestMarkRemoveFromSet(t *testing.T) {
 	))
 }
 
-// TODO ResolvedPos.marks
+func TestMarkResolvedPos(t *testing.T) {
+	isAt := func(doc builder.NodeWithTag, mark *Mark, result bool) {
+		resolved, err := doc.Resolve(doc.Tag["a"])
+		assert.NoError(t, err)
+		assert.Equal(t, mark.IsInSet(resolved.Marks()), result)
+	}
+
+	// recognizes a mark exists inside marked text
+	isAt(doc(p(em("fo<a>o"))), em2, true)
+
+	// recognizes a mark doesn't exist in non-marked text
+	isAt(doc(p(em("fo<a>o"))), strong2, false)
+
+	// considers a mark active after the mark
+	isAt(doc(p(em("hi"), "<a> there")), em2, true)
+
+	// considers a mark inactive before the mark
+	isAt(doc(p("one <a>", em("two"))), em2, false)
+
+	// considers a mark active at the start of the textblock
+	isAt(doc(p(em("<a>one"))), em2, true)
+
+	// notices that attributes differ
+	isAt(doc(p(a("li<a>nk"))), link("http://baz"), false)
+
+	customSchema, err := NewSchema(&SchemaSpec{
+		Nodes: []*NodeSpec{
+			{Key: "doc", Content: "paragraph+"},
+			{Key: "paragraph", Content: "text*"},
+			{Key: "text"},
+		},
+		Marks: []*MarkSpec{
+			{Key: "remark", Attrs: idAttrs, Excludes: &empty, Inclusive: &falsy},
+			{Key: "user", Attrs: idAttrs, Excludes: &underscore},
+			{Key: "strong2", Excludes: &emGroup},
+			{Key: "em", Group: emGroup},
+		},
+	})
+	assert.NoError(t, err)
+	custom := customSchema.Marks
+
+	remark1 := custom["remark"].Create(map[string]interface{}{"id": 1})
+	remark2 := custom["remark"].Create(map[string]interface{}{"id": 2})
+	customStrong := custom["strong2"].Create(nil)
+
+	p1, err := customSchema.Node("paragraph", nil, []interface{}{ // pos 1
+		customSchema.Text("one", []*Mark{remark1, customStrong}),
+		customSchema.Text("two"),
+	})
+	assert.NoError(t, err)
+	p2, err := customSchema.Node("paragraph", nil, []interface{}{ // pos 9
+		customSchema.Text("one"),
+		customSchema.Text("two", []*Mark{remark1}),
+		customSchema.Text("three", []*Mark{remark1}),
+	}) // pos 22
+	assert.NoError(t, err)
+	p3, err := customSchema.Node("paragraph", nil, []interface{}{
+		customSchema.Text("one", []*Mark{remark2}),
+		customSchema.Text("two", []*Mark{remark1}),
+	})
+	assert.NoError(t, err)
+	customDoc, err := customSchema.Node("doc", nil, []interface{}{p1, p2, p3})
+	assert.NoError(t, err)
+
+	// omits non-inclusive marks at end of mark
+	resolved, err := customDoc.Resolve(4)
+	if assert.NoError(t, err) {
+		assert.True(t, SameMarkSet(resolved.Marks(), []*Mark{customStrong}))
+	}
+
+	// includes non-inclusive marks inside a text node
+	resolved, err = customDoc.Resolve(3)
+	if assert.NoError(t, err) {
+		assert.True(t, SameMarkSet(resolved.Marks(), []*Mark{remark1, customStrong}))
+	}
+
+	// omits non-inclusive marks at the end of a line
+	resolved, err = customDoc.Resolve(20)
+	if assert.NoError(t, err) {
+		assert.True(t, SameMarkSet(resolved.Marks(), []*Mark{}))
+	}
+
+	// includes non-inclusive marks between two marked nodes
+	resolved, err = customDoc.Resolve(15)
+	if assert.NoError(t, err) {
+		assert.True(t, SameMarkSet(resolved.Marks(), []*Mark{remark1}))
+	}
+
+	// excludes non-inclusive marks at a point where mark attrs change
+	resolved, err = customDoc.Resolve(25)
+	if assert.NoError(t, err) {
+		assert.True(t, SameMarkSet(resolved.Marks(), []*Mark{}))
+	}
+}

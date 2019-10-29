@@ -50,14 +50,14 @@ func TestNodeResolve(t *testing.T) {
 		assert.Equal(t, dpos.Depth, len(exp)-4)
 		for i := 0; i < len(exp)-3; i++ {
 			ex := exp[i].(res)
-			assert.True(t, dpos.Node(&i).Eq(ex.node))
-			assert.Equal(t, dpos.Start(&i), ex.start)
-			assert.Equal(t, dpos.End(&i), ex.end)
+			assert.True(t, dpos.Node(i).Eq(ex.node))
+			assert.Equal(t, dpos.Start(i), ex.start)
+			assert.Equal(t, dpos.End(i), ex.end)
 			if i > 0 {
-				b, err := dpos.Before(&i)
+				b, err := dpos.Before(i)
 				assert.NoError(t, err)
 				assert.Equal(t, b, ex.start-1)
-				a, err := dpos.After(&i)
+				a, err := dpos.After(i)
 				assert.NoError(t, err)
 				assert.Equal(t, a, ex.end+1)
 			}
