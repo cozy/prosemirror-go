@@ -111,7 +111,7 @@ func (r *ResolvedPos) Before(depth ...int) (int, error) {
 	}
 	rd := r.resolveDepth(d)
 	if rd == 0 {
-		return 0, errors.New("There is no position before the top-level node") // TODO RangeError
+		return 0, errors.New("There is no position before the top-level node")
 	}
 	if rd == r.Depth+1 {
 		return r.Pos, nil
@@ -128,7 +128,7 @@ func (r *ResolvedPos) After(depth ...int) (int, error) {
 	}
 	rd := r.resolveDepth(d)
 	if rd == 0 {
-		return 0, errors.New("There is no position after the top-level node") // TODO RangeError
+		return 0, errors.New("There is no position after the top-level node")
 	}
 	if rd == r.Depth+1 {
 		return r.Pos, nil
@@ -240,7 +240,7 @@ func (r *ResolvedPos) SharedDepth(pos int) int {
 
 func resolvePos(doc *Node, pos int) (*ResolvedPos, error) {
 	if !(pos >= 0 && pos <= doc.Content.Size) {
-		return nil, fmt.Errorf("Position %d out of range", pos) // TODO RangeError
+		return nil, fmt.Errorf("Position %d out of range", pos)
 	}
 	path := []interface{}{}
 	start := 0

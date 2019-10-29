@@ -2,6 +2,22 @@ package model
 
 import "fmt"
 
+// ReplaceError is the error type raised by Node.replace when given an invalid
+// replacement.
+type ReplaceError struct {
+	Message string
+}
+
+// NewReplaceError is the constructor for ReplaceError.
+func NewReplaceError(message string, args ...interface{}) *ReplaceError {
+	return &ReplaceError{Message: fmt.Sprintf(message, args...)}
+}
+
+// Error returns the error message.
+func (e *ReplaceError) Error() string {
+	return e.Message
+}
+
 // Slice represents a piece cut out of a larger document. It stores not only a
 // fragment, but also the depth up to which nodes on both side are ‘open’ (cut
 // through).
