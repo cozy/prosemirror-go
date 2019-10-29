@@ -102,6 +102,28 @@ func (f *Fragment) textBetween(from, to int, args ...string) string {
 	return text
 }
 
+// Append creates a new fragment containing the combined content of this
+// fragment and the other.
+func (f *Fragment) Append(other *Fragment) *Fragment {
+	if other.Size == 0 {
+		return f
+	}
+	if f.Size == 0 {
+		return other
+	}
+	last := f.LastChild()
+	first := other.FirstChild()
+	content := make([]*Node, len(f.Content))
+	copy(content, f.Content)
+	i := 0
+	if last.IsText() && last.SameMarkup(first) {
+		content[len(content)-1] = last.withText(*last.Text + *first.Text)
+		i = 1
+	}
+	content = append(content, other.Content[i:]...)
+	return NewFragment(content, f.Size+other.Size)
+}
+
 // Cut out the sub-fragment between the two given positions.
 func (f *Fragment) Cut(from int, to ...int) *Fragment {
 	t := f.Size
@@ -151,6 +173,20 @@ func (f *Fragment) Cut(from int, to ...int) *Fragment {
 	return NewFragment(result, size)
 }
 
+// ReplaceChild creates a new fragment in which the node at the given index is
+// replaced by the given node.
+func (f *Fragment) ReplaceChild(index int, node *Node) *Fragment {
+	current := f.Content[index]
+	if current == node {
+		return f
+	}
+	cpy := make([]*Node, len(f.Content))
+	copy(cpy, f.Content)
+	size := f.Size + node.NodeSize() - current.NodeSize()
+	cpy[index] = node
+	return NewFragment(cpy, size)
+}
+
 // Eq compares this fragment to another one.
 func (f *Fragment) Eq(other *Fragment) bool {
 	if len(f.Content) != len(other.Content) {
@@ -162,6 +198,22 @@ func (f *Fragment) Eq(other *Fragment) bool {
 		}
 	}
 	return true
+}
+
+// FirstChild returns the first child of the fragment, or null if it is empty.
+func (f *Fragment) FirstChild() *Node {
+	if len(f.Content) == 0 {
+		return nil
+	}
+	return f.Content[0]
+}
+
+// LastChild returns the last child of the fragment, or null if it is empty.
+func (f *Fragment) LastChild() *Node {
+	if len(f.Content) == 0 {
+		return nil
+	}
+	return f.Content[len(f.Content)-1]
 }
 
 // ChildCount returns the number of child nodes in this fragment.

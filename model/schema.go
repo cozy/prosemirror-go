@@ -73,6 +73,10 @@ func (nt *NodeType) IsLeaf() bool {
 	return false // TODO
 }
 
+func (nt *NodeType) compatibleContent(other *NodeType) bool {
+	return nt == other // TODO
+}
+
 func (nt *NodeType) computeAttrs(attrs map[string]interface{}) map[string]interface{} {
 	return attrs // TODO
 }

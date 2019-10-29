@@ -237,10 +237,31 @@ func (n *Node) Slice(from int, args ...interface{}) *Slice {
 	return NewSlice(content, resFrom.Depth-depth, resTo.Depth-depth)
 }
 
+// Replace the part of the document between the given positions with the given
+// slice. The slice must 'fit', meaning its open sides must be able to connect
+// to the surrounding content, and its content nodes must be valid children for
+// the node they are placed into. If any of this is violated, an error of type
+// ReplaceError is thrown.
+func (n *Node) Replace(from, to int, slice *Slice) (*Node, error) {
+	f, err := n.Resolve(from)
+	if err != nil {
+		return nil, err
+	}
+	t, err := n.Resolve(to)
+	if err != nil {
+		return nil, err
+	}
+	return replace(f, t, slice)
+}
+
 // Resolve the given position in the document, returning an object with
 // information about its context.
 func (n *Node) Resolve(pos int) (*ResolvedPos, error) {
 	return resolvePosCached(n, pos)
+}
+
+func (n *Node) resolveNoCache(pos int) (*ResolvedPos, error) {
+	return resolvePos(n, pos)
 }
 
 // NodeAt finds the node directly after the given position.
