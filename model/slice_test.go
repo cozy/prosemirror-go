@@ -86,9 +86,7 @@ func TestNodeSlice(t *testing.T) {
 		blockquote(p("bar"), ul(li(p("a")), li(p("b")))), 1, 2)
 
 	// can include parents
-	// TODO
-	// let d = doc(blockquote(p("fo<a>o"), p("bar<b>")))
-	// let slice = d.slice(d.tag.a, d.tag.b, true)
-	// ist(slice.toString(), '<blockquote(paragraph("o"), paragraph("bar"))>(2,2)')
-	// })
+	d := doc(blockquote(p("fo<a>o"), p("bar<b>")))
+	slice := d.Slice(d.Tag["a"], d.Tag["b"], true)
+	assert.Equal(t, slice.String(), `<blockquote(paragraph("o"), paragraph("bar"))>(2,2)`)
 }

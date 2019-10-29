@@ -221,7 +221,7 @@ func (n *Node) Slice(from int, args ...interface{}) *Slice {
 		panic(err)
 	}
 	depth := 0
-	if includeParents {
+	if !includeParents {
 		depth = resFrom.SharedDepth(to)
 	}
 	start := resFrom.Start(&depth)
