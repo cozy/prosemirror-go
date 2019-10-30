@@ -37,8 +37,9 @@ func parseContentMatch(str string, nodeTypes map[string]*NodeType) (*ContentMatc
 	if stream.next() != nil {
 		return nil, stream.err("Unexpected trailing text")
 	}
-	fmt.Printf("expr = %v\n", expr) // TODO
-	return EmptyContentMatch, nil   // TODO
+	match := dfa(nfa(expr))
+	fmt.Printf("match = %v\n", match) // TODO
+	return EmptyContentMatch, nil     // TODO
 }
 
 // MatchType matches a node type, returning a match after that node if
@@ -324,4 +325,113 @@ func parseExprAtom(stream *tokenStream) (*exprType, error) {
 		return nil, stream.err("Unexpected token %q", *s)
 	}
 	return nil, stream.err("Unexpected token nil")
+}
+
+// The code below helps compile a regular-expression-like language
+// into a deterministic finite automaton. For a good introduction to
+// these concepts, see https://swtch.com/~rsc/regexp/regexp1.html
+
+type edgeType struct {
+	term interface{}
+	to   int
+}
+
+type state []edgeType
+
+// Construct an NFA from an expression as returned by the parser. The
+// NFA is represented as an array of states, which are themselves
+// arrays of edges, which are `{term, to}` objects. The first state is
+// the entry state and the last node is the success state.
+//
+// Note that unlike typical NFAs, the edge ordering in this one is
+// significant, in that it is used to contruct filler content when
+// necessary.
+func nfa(expr *exprType) []state {
+	var nfa []state
+
+	node := func() int {
+		nfa = append(nfa, state{})
+		return len(nfa) - 1
+	}
+	edge := func(from int, args ...interface{}) edgeType {
+		to := 0
+		if len(args) > 0 {
+			to, _ = args[0].(int)
+		}
+		var term interface{}
+		if len(args) > 1 {
+			term = args[1]
+		}
+		edge := edgeType{term: term, to: to}
+		nfa[from] = append(nfa[from], edge)
+		return edge
+	}
+	connect := func(edges state, to int) {
+		for i := range edges {
+			edges[i].to = to
+		}
+	}
+
+	var compile func(expr *exprType, from int) state
+	compile = func(expr *exprType, from int) state {
+		switch expr.Type {
+		case "choice":
+			var out state
+			for _, ex := range expr.Exprs {
+				out = append(out, compile(ex, from)...)
+			}
+			return out
+		case "seq":
+			for i, expr := range expr.Exprs {
+				next := compile(expr, from)
+				if i == len(expr.Exprs)-1 {
+					return next
+				}
+				from = node()
+				connect(next, from)
+			}
+		case "star":
+			loop := node()
+			edge(from, loop)
+			connect(compile(expr.Expr, loop), loop)
+			return state{edge(loop)}
+		case "plus":
+			loop := node()
+			connect(compile(expr.Expr, from), loop)
+			connect(compile(expr.Expr, loop), loop)
+			return state{edge(loop)}
+		case "opt":
+			return append(state{edge(from)}, compile(expr.Expr, from)...)
+		case "range":
+			cur := from
+			for i := 0; i < expr.Min; i++ {
+				next := node()
+				connect(compile(expr.Expr, cur), next)
+				cur = next
+			}
+			if expr.Max == -1 {
+				connect(compile(expr.Expr, cur), cur)
+			} else {
+				for i := expr.Min; i < expr.Max; i++ {
+					next := node()
+					edge(cur, next)
+					connect(compile(expr.Expr, cur), next)
+					cur = next
+				}
+			}
+			return state{edge(cur)}
+		case "name":
+			return state{edge(from, nil, expr.Value)}
+		}
+		panic(fmt.Errorf("Unknown type %s", expr.Type))
+	}
+
+	connect(compile(expr, 0), node())
+	return nfa
+}
+
+// Compiles an NFA as produced by nfa into a DFA, modeled as a set of state
+// objects (ContentMatch instances) with transitions between them.
+func dfa(nfa []state) *ContentMatch {
+	return nil // TODO
 }
