@@ -143,6 +143,7 @@ func (nt *NodeType) CreateChecked(args ...interface{}) (*Node, error) {
 		}
 		marks = arg
 	}
+
 	fragment, err := FragmentFrom(content)
 	if err != nil {
 		return nil, err
@@ -151,6 +152,54 @@ func (nt *NodeType) CreateChecked(args ...interface{}) (*Node, error) {
 		return nil, fmt.Errorf("Invalid content for node %s", nt.Name)
 	}
 	return NewNode(nt, nt.computeAttrs(attrs), fragment, MarkSetFrom(marks)), nil
+}
+
+// CreateAndFill is like create, but see if it is necessary to add nodes to the
+// start or end of the given fragment to make it fit the node. If no fitting
+// wrapping can be found, return null. Note that, due to the fact that required
+// nodes can always be created, this will always succeed if you pass null or
+// Fragment.empty as content.
+//
+// :: (?Object, ?union<Fragment, Node, [Node]>, ?[Mark]) → ?Node
+func (nt *NodeType) CreateAndFill(args ...interface{}) (*Node, error) {
+	var attrs map[string]interface{}
+	if len(args) > 0 && args[0] != nil {
+		arg, ok := args[0].(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("Invalid type for attrs: %v (%T)", args[0], args[0])
+		}
+		attrs = arg
+	}
+	var content interface{}
+	if len(args) > 1 {
+		content = args[1]
+	}
+	var marks []*Mark
+	if len(args) > 2 && args[2] != nil {
+		arg, ok := args[2].([]*Mark)
+		if !ok {
+			return nil, fmt.Errorf("Invalid type for marks: %v (%T)", args[2], args[2])
+		}
+		marks = arg
+	}
+
+	attrs = nt.computeAttrs(attrs)
+	fragment, err := FragmentFrom(content)
+	if err != nil {
+		return nil, err
+	}
+	if fragment.Size > 0 {
+		before := nt.ContentMatch.FillBefore(fragment)
+		if before == nil {
+			return nil, nil
+		}
+		fragment = before.Append(fragment)
+	}
+	after := nt.ContentMatch.MatchFragment(fragment).FillBefore(EmptyFragment, true)
+	if after == nil {
+		return nil, nil
+	}
+	return NewNode(nt, attrs, fragment.Append(after), MarkSetFrom(marks)), nil
 }
 
 // ValidContent returns true if the given fragment is valid content for this

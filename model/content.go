@@ -101,6 +101,58 @@ func (cm *ContentMatch) compatible(other *ContentMatch) bool {
 	return false
 }
 
+// FillBefore tries to match the given fragment, and if that fails, see if it
+// can be made to match by inserting nodes in front of it. When successful,
+// return a fragment of inserted nodes (which may be empty if nothing had to be
+// inserted). When toEnd is true, only return a fragment if the resulting match
+// goes to the end of the content expression.
+func (cm *ContentMatch) FillBefore(after *Fragment, toEnd ...bool) *Fragment {
+	end := false
+	if len(toEnd) > 0 {
+		end = toEnd[0]
+	}
+	startIndex := 0
+	seen := []*ContentMatch{cm}
+
+	var search func(match *ContentMatch, types []*NodeType) *Fragment
+	search = func(match *ContentMatch, types []*NodeType) *Fragment {
+		finished := match.MatchFragment(after, startIndex)
+		if finished != nil && (!end || finished.ValidEnd) {
+			created := make([]*Node, len(types))
+			for i, typ := range types {
+				var err error
+				created[i], err = typ.CreateAndFill()
+				if err != nil {
+					panic(err)
+				}
+			}
+			frag, err := FragmentFrom(created)
+			if err != nil {
+				panic(err)
+			}
+			return frag
+		}
+
+		for i := 0; i < len(match.next); i += 2 {
+			typ := match.next[i].(*NodeType)
+			next := match.next[i+1].(*ContentMatch)
+			if !(typ.IsText() || typ.hasRequiredAttrs() || indexOf(seen, next) == -1) {
+				seen = append(seen, next)
+				concat := make([]*NodeType, len(types), len(types)+1)
+				copy(concat, types)
+				concat = append(concat, typ)
+				found := search(next, concat)
+				if found != nil {
+					return found
+				}
+			}
+		}
+		return nil
+	}
+
+	return search(cm, nil)
+}
+
 // EmptyContentMatch is an empty ContentMatch.
 var EmptyContentMatch = NewContentMatch(true)
 
