@@ -86,6 +86,15 @@ func (nt *NodeType) IsLeaf() bool {
 	return nt.ContentMatch == EmptyContentMatch
 }
 
+func (nt *NodeType) hasRequiredAttrs() bool {
+	for _, attr := range nt.Attrs {
+		if attr.isRequired() {
+			return true
+		}
+	}
+	return false
+}
+
 func (nt *NodeType) compatibleContent(other *NodeType) bool {
 	return nt == other || nt.ContentMatch.compatible(other.ContentMatch)
 }
@@ -187,6 +196,10 @@ func compileNodeType(nodes []*NodeSpec, schema *Schema) (map[string]*NodeType, e
 type Attribute struct {
 	HasDefault bool
 	Default    interface{}
+}
+
+func (a *Attribute) isRequired() bool {
+	return !a.HasDefault
 }
 
 // NewAttribute is the constructor for Attribute.

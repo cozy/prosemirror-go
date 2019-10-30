@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -38,8 +39,10 @@ func parseContentMatch(str string, nodeTypes map[string]*NodeType) (*ContentMatc
 		return nil, stream.err("Unexpected trailing text")
 	}
 	match := dfa(nfa(expr))
-	fmt.Printf("match = %v\n", match) // TODO
-	return EmptyContentMatch, nil     // TODO
+	if err := checkForDeadEnds(match, stream); err != nil {
+		return nil, err
+	}
+	return match, nil
 }
 
 // MatchType matches a node type, returning a match after that node if
@@ -110,10 +113,10 @@ type tokenStream struct {
 
 func newTokenStream(str string, nodeTypes map[string]*NodeType) *tokenStream {
 	tokens := strings.Fields(str) // TODO string.split(/\s*(?=\b|\W|$)/)
-	if tokens[len(tokens)-1] == "" {
+	if len(tokens) > 0 && tokens[len(tokens)-1] == "" {
 		tokens = tokens[:len(tokens)-1]
 	}
-	if tokens[0] == "" {
+	if len(tokens) > 0 && tokens[0] == "" {
 		tokens = tokens[1:]
 	}
 	return &tokenStream{
@@ -430,8 +433,127 @@ func nfa(expr *exprType) []state {
 	return nfa
 }
 
+func indexOf(slice, item interface{}) int {
+	switch slice := slice.(type) {
+	case []interface{}:
+		for i := range slice {
+			if slice[i] == item {
+				return i
+			}
+		}
+	case []int:
+		for i := range slice {
+			if slice[i] == item {
+				return i
+			}
+		}
+	case []*ContentMatch:
+		for i := range slice {
+			if slice[i] == item {
+				return i
+			}
+		}
+	}
+	return -1
+}
+
+// Get the set of nodes reachable by null edges from `node`. Omit
+// nodes with only a single null-out-edge, since they may lead to
+// needless duplicated nodes.
+func nullFrom(nfa []state, node int) []int {
+	var result []int
+
+	var scan func(node int)
+	scan = func(node int) {
+		edges := nfa[node]
+		if len(edges) == 1 && edges[0].term == nil {
+			scan(edges[0].to)
+			return
+		}
+		result = append(result, node)
+		for i := range edges {
+			term := edges[i].term
+			to := edges[i].to
+			if term == nil && indexOf(result, to) == -1 {
+				scan(to)
+			}
+		}
+	}
+
+	scan(node)
+	sort.Ints(result)
+	return result
+}
+
 // Compiles an NFA as produced by nfa into a DFA, modeled as a set of state
 // objects (ContentMatch instances) with transitions between them.
 func dfa(nfa []state) *ContentMatch {
-	return nil // TODO
+	var labeled map[string]*ContentMatch
+
+	var explore func(states []int) *ContentMatch
+	explore = func(states []int) *ContentMatch {
+		var out []interface{}
+		for _, node := range states {
+			for _, edge := range nfa[node] {
+				term := edge.term
+				if term == nil {
+					continue
+				}
+				to := edge.to
+				ok := false
+				var set []int
+				if known := indexOf(out, term); known > -1 {
+					ok = true
+					set = out[known+1].([]int)
+				}
+				for _, node := range nullFrom(nfa, to) {
+					if !ok {
+						set = []int{}
+						out = append(out, term, set)
+					}
+					if indexOf(set, node) == -1 {
+						set = append(set, node)
+					}
+				}
+			}
+		}
+		state := NewContentMatch(indexOf(states, len(nfa)-1) > -1)
+		labeled[fmt.Sprintf("%v", states)] = state
+		for i := 0; i < len(out); i += 2 {
+			states = out[i+1].([]int)
+			sort.Ints(states)
+			cm, ok := labeled[fmt.Sprintf("%v", states)]
+			if !ok {
+				cm = explore(states)
+			}
+			state.next = append(state.next, out[i], cm)
+		}
+		return state
+	}
+
+	return explore(nullFrom(nfa, 0))
+}
+
+func checkForDeadEnds(match *ContentMatch, stream *tokenStream) error {
+	work := []*ContentMatch{match}
+	for i := 0; i < len(work); i++ {
+		state := work[i]
+		dead := !state.ValidEnd
+		var nodes []*NodeType
+		for j := 0; j < len(state.next); j += 2 {
+			node := state.next[j].(*NodeType)
+			next := state.next[j+1].(*ContentMatch)
+			nodes = append(nodes, node)
+			if dead && !(node.IsText() || node.hasRequiredAttrs()) {
+				dead = false
+			}
+			if indexOf(work, next) == -1 {
+				work = append(work, next)
+			}
+		}
+		if dead {
+			return stream.err("Only non-generatable nodes (%v) in a required position", nodes)
+		}
+	}
+	return nil
 }
