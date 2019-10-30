@@ -1,10 +1,12 @@
 package model_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
 	. "github.com/cozy/prosemirror-go/model"
+	"github.com/cozy/prosemirror-go/test/builder"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,6 +33,34 @@ func valid(t *testing.T, expr, types string) {
 }
 func invalid(t *testing.T, expr, types string) {
 	assert.False(t, match(t, expr, types))
+}
+
+func fill(t *testing.T, expr string, before, after builder.NodeWithTag, result interface{}) {
+	fmt.Printf("fill %s\n", expr)
+	filled := get(t, expr).MatchFragment(before.Content).FillBefore(after.Content, true)
+	if result != nil {
+		if assert.NotNil(t, filled) {
+			assert.True(t, filled.Eq(result.(builder.NodeWithTag).Content))
+		}
+	} else {
+		assert.Nil(t, filled)
+	}
+}
+
+func fill3(t *testing.T, expr string, before, mid, after builder.NodeWithTag, args ...interface{}) {
+	fmt.Printf("fill3 %s\n", expr)
+	content := get(t, expr)
+	a := content.MatchFragment(before.Content).FillBefore(mid.Content)
+	var b *Fragment
+	if a != nil {
+		b = content.MatchFragment(before.Content.Append(a).Append(mid.Content)).FillBefore(after.Content)
+	}
+	if len(args) > 1 && args[0] != nil {
+		assert.True(t, a.Eq(args[0].(builder.NodeWithTag).Content))
+		assert.True(t, b.Eq(args[1].(builder.NodeWithTag).Content))
+	} else {
+		assert.Nil(t, b)
+	}
 }
 
 func TestContentMatchMatchType(t *testing.T) {
@@ -119,4 +149,91 @@ func TestContentMatchMatchType(t *testing.T) {
 	invalid(t, "hard_break{2,}", "hard_break")
 }
 
-// TODO fillBefore
+func TestContentMatchFillBefore(t *testing.T) {
+	// returns the empty fragment when things match
+	fill(t, "paragraph horizontal_rule paragraph", doc(p(), hr), doc(p()), doc())
+
+	// adds a node when necessary
+	// TODO
+	// fill(t, "paragraph horizontal_rule paragraph", doc(p()), doc(p()), doc(hr))
+
+	// accepts an asterisk across the bound
+	fill(t, "hard_break*", p(br), p(br), p())
+
+	// accepts an asterisk only on the left
+	fill(t, "hard_break*", p(br), p(), p())
+
+	// accepts an asterisk only on the right
+	fill(t, "hard_break*", p(), p(br), p())
+
+	// accepts an asterisk with no elements
+	fill(t, "hard_break*", p(), p(), p())
+
+	// accepts a plus across the bound
+	fill(t, "hard_break+", p(br), p(br), p())
+
+	// adds an element for a content-less plus
+	// TODO
+	// fill(t, "hard_break+", p(), p(), p(br))
+
+	// fails for a mismatched plus
+	fill(t, "hard_break+", p(), p(img), nil)
+
+	// accepts asterisk with content on both sides
+	fill(t, "heading* paragraph*", doc(h1()), doc(p()), doc())
+
+	// accepts asterisk with no content after
+	fill(t, "heading* paragraph*", doc(h1()), doc(), doc())
+
+	// accepts plus with content on both sides
+	fill(t, "heading+ paragraph+", doc(h1()), doc(p()), doc())
+
+	// accepts plus with no content after
+	// TODO
+	// fill(t, "heading+ paragraph+", doc(h1()), doc(), doc(p()))
+
+	// adds elements to match a count
+	// TODO
+	// fill(t, "hard_break{3}", p(br), p(br), p(br))
+
+	// fails when there are too many elements
+	fill(t, "hard_break{3}", p(br, br), p(br, br), nil)
+
+	// adds elements for two counted groups
+	// TODO
+	// fill(t, "code_block{2} paragraph{2}", doc(pre()), doc(p()), doc(pre(), p()))
+
+	// doesn't include optional elements
+	// TODO
+	// fill(t, "heading paragraph? horizontal_rule", doc(h1()), doc(), doc(hr))
+
+	// completes a sequence
+	// TODO
+	// fill3(t, "paragraph horizontal_rule paragraph horizontal_rule paragraph",
+	// 	doc(p()), doc(p()), doc(p()), doc(hr), doc(hr))
+
+	// accepts plus across two bounds
+	fill3(t, "code_block+ paragraph+",
+		doc(pre()), doc(pre()), doc(p()), doc(), doc())
+
+	// fills a plus from empty input
+	// TODO
+	// fill3(t, "code_block+ paragraph+",
+	// 	doc(), doc(), doc(), doc(), doc(pre(), p()))
+
+	// completes a count
+	// TODO
+	// fill3(t, "code_block{3} paragraph{3}",
+	// 	doc(pre()), doc(p()), doc(), doc(pre(), pre()), doc(p(), p()))
+
+	// fails on non-matching elements
+	// TODO
+	// fill3(t, "paragraph*", doc(p()), doc(pre()), doc(p()), nil)
+
+	// completes a plus across two bounds
+	// TODO
+	// fill3(t, "paragraph{4}", doc(p()), doc(p()), doc(p()), doc(), doc(p()))
+
+	// refuses to complete an overflown count across two bounds
+	fill3(t, "paragraph{2}", doc(p()), doc(p()), doc(p()), nil)
+}

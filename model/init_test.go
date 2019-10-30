@@ -20,6 +20,8 @@ var (
 	br         = builder.Br
 	code       = builder.Code
 	a          = builder.A
+	hr         = builder.Hr
+	pre        = builder.Pre
 
 	strong2 = schema.Mark("strong")
 	em2     = schema.Mark("em")
