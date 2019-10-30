@@ -14,7 +14,7 @@ custom document schemas. This repository contains a port in Go of
 [prosemirror-transform](https://github.com/ProseMirror/prosemirror-transform/)
 in order to have the server part of the collaborative editing in Go.
 
-## Limitations
+## Notes
 
 1. Only the code necessary for writing a server for collaborative editing will
    be ported, not things like translating a document to/from a DOM
@@ -50,6 +50,10 @@ func (n *Node) NodesBetween(from, to int, fn NBCallback, startPos ...int) {
 	n.Content.NodesBetween(from, to, fn, s, n)
 }
 ```
+
+4. Exceptions in JS can be manager in Go by returning an error, or with a
+   panic. We have tried to panic only for logic bugs and out of bounds access,
+   and returning an error everywhere else.
 
 ## License
 
