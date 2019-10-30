@@ -2,9 +2,9 @@ package model
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
-	"strings"
 )
 
 // ContentMatch represents a match state of a node type's content expression,
@@ -26,7 +26,8 @@ func NewContentMatch(validEnd bool) *ContentMatch {
 	}
 }
 
-func parseContentMatch(str string, nodeTypes map[string]*NodeType) (*ContentMatch, error) {
+// ParseContentMatch builds a ContentMatch from a string expression.
+func ParseContentMatch(str string, nodeTypes map[string]*NodeType) (*ContentMatch, error) {
 	stream := newTokenStream(str, nodeTypes)
 	if stream.next() == nil {
 		return EmptyContentMatch, nil
@@ -39,9 +40,10 @@ func parseContentMatch(str string, nodeTypes map[string]*NodeType) (*ContentMatc
 		return nil, stream.err("Unexpected trailing text")
 	}
 	match := dfa(nfa(expr))
-	if err := checkForDeadEnds(match, stream); err != nil {
-		return nil, err
-	}
+	// TODO
+	// if err := checkForDeadEnds(match, stream); err != nil {
+	// 	return nil, err
+	// }
 	return match, nil
 }
 
@@ -111,8 +113,10 @@ type tokenStream struct {
 	tokens    []string
 }
 
+var splitter = regexp.MustCompile(`\w+|\S`)
+
 func newTokenStream(str string, nodeTypes map[string]*NodeType) *tokenStream {
-	tokens := strings.Fields(str) // TODO string.split(/\s*(?=\b|\W|$)/)
+	tokens := splitter.FindAllString(str, -1)
 	if len(tokens) > 0 && tokens[len(tokens)-1] == "" {
 		tokens = tokens[:len(tokens)-1]
 	}
@@ -134,7 +138,7 @@ func (ts *tokenStream) next() *string {
 }
 
 func (ts *tokenStream) eat(tok string) bool {
-	if s := ts.next(); s != nil && *s != tok {
+	if s := ts.next(); s == nil || *s != tok {
 		return false
 	}
 	ts.pos++
@@ -181,7 +185,7 @@ func parseExprSeq(stream *tokenStream) (*exprType, error) {
 			return nil, err
 		}
 		exprs = append(exprs, sub)
-		if s := stream.next(); s != nil && *s != ")" && *s != "|" {
+		if s := stream.next(); s == nil || *s == ")" || *s == "|" {
 			break
 		}
 	}
@@ -335,11 +339,11 @@ func parseExprAtom(stream *tokenStream) (*exprType, error) {
 // these concepts, see https://swtch.com/~rsc/regexp/regexp1.html
 
 type edgeType struct {
-	term interface{}
+	term *NodeType
 	to   int
 }
 
-type state []edgeType
+type state []*edgeType
 
 // Construct an NFA from an expression as returned by the parser. The
 // NFA is represented as an array of states, which are themselves
@@ -347,25 +351,25 @@ type state []edgeType
 // the entry state and the last node is the success state.
 //
 // Note that unlike typical NFAs, the edge ordering in this one is
-// significant, in that it is used to contruct filler content when
+// significant, in that it is used to construct filler content when
 // necessary.
 func nfa(expr *exprType) []state {
-	var nfa []state
+	nfa := []state{state{}}
 
 	node := func() int {
 		nfa = append(nfa, state{})
 		return len(nfa) - 1
 	}
-	edge := func(from int, args ...interface{}) edgeType {
+	edge := func(from int, args ...interface{}) *edgeType {
 		to := 0
 		if len(args) > 0 {
 			to, _ = args[0].(int)
 		}
-		var term interface{}
+		var term *NodeType
 		if len(args) > 1 {
-			term = args[1]
+			term, _ = args[1].(*NodeType)
 		}
-		edge := edgeType{term: term, to: to}
+		edge := &edgeType{term: term, to: to}
 		nfa[from] = append(nfa[from], edge)
 		return edge
 	}
@@ -385,8 +389,8 @@ func nfa(expr *exprType) []state {
 			}
 			return out
 		case "seq":
-			for i, expr := range expr.Exprs {
-				next := compile(expr, from)
+			for i, ex := range expr.Exprs {
+				next := compile(ex, from)
 				if i == len(expr.Exprs)-1 {
 					return next
 				}
@@ -426,7 +430,7 @@ func nfa(expr *exprType) []state {
 		case "name":
 			return state{edge(from, nil, expr.Value)}
 		}
-		panic(fmt.Errorf("Unknown type %s", expr.Type))
+		panic(fmt.Errorf("Unknown type %q", expr.Type))
 	}
 
 	connect(compile(expr, 0), node())
@@ -488,7 +492,7 @@ func nullFrom(nfa []state, node int) []int {
 // Compiles an NFA as produced by nfa into a DFA, modeled as a set of state
 // objects (ContentMatch instances) with transitions between them.
 func dfa(nfa []state) *ContentMatch {
-	var labeled map[string]*ContentMatch
+	labeled := map[string]*ContentMatch{}
 
 	var explore func(states []int) *ContentMatch
 	explore = func(states []int) *ContentMatch {

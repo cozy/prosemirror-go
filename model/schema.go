@@ -412,8 +412,9 @@ func NewSchema(spec *SchemaSpec) (*Schema, error) {
 		// markExpr := typ.Spec.Marks
 		cm, ok := contentExprCache[contentExpr]
 		if !ok {
-			cm, err = parseContentMatch(contentExpr, schema.Nodes)
+			cm, err = ParseContentMatch(contentExpr, schema.Nodes)
 			if err != nil {
+				fmt.Printf("ParseContentMatch error: %s\n", err) // TODO
 				return nil, err
 			}
 			contentExprCache[contentExpr] = cm

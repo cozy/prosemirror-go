@@ -49,10 +49,10 @@ var Nodes = []*model.NodeSpec{
 
 	// An inline image (<img>) node. Supports src, alt, and href attributes. The
 	// latter two default to the empty string.
-	{Key: "image", Group: "inline", Attrs: imageAttrs},
+	{Key: "image", Group: "inline", Inline: true, Attrs: imageAttrs},
 
 	// A hard line break, represented in the DOM as <br>.
-	{Key: "hard_break", Group: "inline"},
+	{Key: "hard_break", Group: "inline", Inline: true},
 }
 
 // Marks are the specs for the marks in the schema.
