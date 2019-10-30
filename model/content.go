@@ -40,10 +40,9 @@ func ParseContentMatch(str string, nodeTypes map[string]*NodeType) (*ContentMatc
 		return nil, stream.err("Unexpected trailing text")
 	}
 	match := dfa(nfa(expr))
-	// TODO
-	// if err := checkForDeadEnds(match, stream); err != nil {
-	// 	return nil, err
-	// }
+	if err := checkForDeadEnds(match, stream); err != nil {
+		return nil, err
+	}
 	return match, nil
 }
 
@@ -117,12 +116,6 @@ var splitter = regexp.MustCompile(`\w+|\S`)
 
 func newTokenStream(str string, nodeTypes map[string]*NodeType) *tokenStream {
 	tokens := splitter.FindAllString(str, -1)
-	if len(tokens) > 0 && tokens[len(tokens)-1] == "" {
-		tokens = tokens[:len(tokens)-1]
-	}
-	if len(tokens) > 0 && tokens[0] == "" {
-		tokens = tokens[1:]
-	}
 	return &tokenStream{
 		str:       str,
 		nodeTypes: nodeTypes,
@@ -228,6 +221,7 @@ func parseNum(stream *tokenStream) (int, error) {
 	if err != nil {
 		return 0, stream.err("Expected number, got %q", *s)
 	}
+	stream.pos++
 	return result, nil
 }
 
@@ -354,7 +348,7 @@ type state []*edgeType
 // significant, in that it is used to construct filler content when
 // necessary.
 func nfa(expr *exprType) []state {
-	nfa := []state{state{}}
+	nfa := []state{{}}
 
 	node := func() int {
 		nfa = append(nfa, state{})
@@ -485,7 +479,7 @@ func nullFrom(nfa []state, node int) []int {
 	}
 
 	scan(node)
-	sort.Ints(result)
+	sort.Slice(result, func(i, j int) bool { return result[i] > result[j] })
 	return result
 }
 
@@ -504,19 +498,20 @@ func dfa(nfa []state) *ContentMatch {
 					continue
 				}
 				to := edge.to
-				ok := false
 				var set []int
-				if known := indexOf(out, term); known > -1 {
-					ok = true
+				known := indexOf(out, term)
+				if known > -1 {
 					set = out[known+1].([]int)
 				}
 				for _, node := range nullFrom(nfa, to) {
-					if !ok {
+					if known == -1 {
 						set = []int{}
 						out = append(out, term, set)
+						known = len(out) - 2
 					}
 					if indexOf(set, node) == -1 {
 						set = append(set, node)
+						out[known+1] = set
 					}
 				}
 			}
@@ -525,7 +520,7 @@ func dfa(nfa []state) *ContentMatch {
 		labeled[fmt.Sprintf("%v", states)] = state
 		for i := 0; i < len(out); i += 2 {
 			states = out[i+1].([]int)
-			sort.Ints(states)
+			sort.Slice(states, func(i, j int) bool { return states[i] > states[j] })
 			cm, ok := labeled[fmt.Sprintf("%v", states)]
 			if !ok {
 				cm = explore(states)

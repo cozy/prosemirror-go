@@ -161,7 +161,7 @@ func (nt *NodeType) ValidContent(content *Fragment) bool {
 		return false
 	}
 	for _, child := range content.Content {
-		if nt.AllowsMarks(child.Marks) {
+		if !nt.AllowsMarks(child.Marks) {
 			return false
 		}
 	}

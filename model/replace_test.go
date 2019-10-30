@@ -88,16 +88,14 @@ func TestNodeReplace(t *testing.T) {
 		doc(blockquote(p("foox")), blockquote(p("ybar"))))
 
 	// keeps the node type of the left node
-	// TODO
-	// rpl(doc(h1("foo<a>bar"), "<b>"),
-	// 	doc(p("foo<a>baz"), "<b>"),
-	// 	doc(h1("foobaz")))
+	rpl(doc(h1("foo<a>bar"), "<b>"),
+		doc(p("foo<a>baz"), "<b>"),
+		doc(h1("foobaz")))
 
 	// keeps the node type even when empty
-	// TODO
-	// rpl(doc(h1("<a>bar"), "<b>"),
-	// 	doc(p("foo<a>baz"), "<b>"),
-	// 	doc(h1("baz")))
+	rpl(doc(h1("<a>bar"), "<b>"),
+		doc(p("foo<a>baz"), "<b>"),
+		doc(h1("baz")))
 
 	bad := func(doc, insert builder.NodeWithTag, pattern string) {
 		slice := EmptySlice
