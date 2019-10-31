@@ -288,5 +288,3 @@ func resolvePosCached(doc *Node, pos int) (*ResolvedPos, error) {
 	// TODO add cache
 	return resolvePos(doc, pos)
 }
-
-// TODO

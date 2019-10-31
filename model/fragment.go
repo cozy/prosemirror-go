@@ -310,8 +310,6 @@ func (f *Fragment) toStringInner() string {
 	return str
 }
 
-// TODO
-
 // FragmentFromArray builds a fragment from an array of nodes. Ensures that
 // adjacent text nodes with the same marks are joined together.
 func FragmentFromArray(array []*Node) *Fragment {

@@ -22,6 +22,25 @@ func defaultAttrs(attrs map[string]*Attribute) map[string]interface{} {
 	return defaults
 }
 
+func computeAttrs(attrs map[string]*Attribute, value ...map[string]interface{}) map[string]interface{} {
+	var v map[string]interface{}
+	if len(value) > 0 {
+		v = value[0]
+	}
+	built := map[string]interface{}{}
+	for name, attr := range attrs {
+		given, ok := v[name]
+		if !ok {
+			if !attr.HasDefault {
+				panic(fmt.Errorf("No value supplied for attribute %s", name))
+			}
+			given = attr.Default
+		}
+		built[name] = given
+	}
+	return built
+}
+
 func initAttrs(attrs map[string]*AttributeSpec) map[string]*Attribute {
 	result := map[string]*Attribute{}
 	for name, attr := range attrs {
@@ -47,7 +66,6 @@ type NodeType struct {
 	ContentMatch *ContentMatch
 	// True if this node type has inline content.
 	InlineContent bool
-	// TODO
 }
 
 // NewNodeType is the constructor for NodeType.
@@ -62,7 +80,6 @@ func NewNodeType(name string, schema *Schema, spec *NodeSpec) *NodeType {
 		DefaultAttrs:  defaultAttrs(attrs),
 		ContentMatch:  nil,
 		InlineContent: false,
-		// TODO
 	}
 }
 
@@ -100,7 +117,10 @@ func (nt *NodeType) compatibleContent(other *NodeType) bool {
 }
 
 func (nt *NodeType) computeAttrs(attrs map[string]interface{}) map[string]interface{} {
-	return attrs // TODO
+	if len(attrs) == 0 && len(nt.DefaultAttrs) > 0 {
+		return nt.DefaultAttrs
+	}
+	return computeAttrs(nt.Attrs, attrs)
 }
 
 // Create a Node of this type. The given attributes are checked and defaulted
@@ -329,8 +349,6 @@ func (mt *MarkType) Excludes(other *MarkType) bool {
 	return false
 }
 
-// TODO add other methods to MarkType
-
 // SchemaSpec is an object describing a schema, as passed to the Schema
 // constructor.
 type SchemaSpec struct {
@@ -380,8 +398,6 @@ type NodeSpec struct {
 	// Defines the default way a node of this type should be serialized to a
 	// string representation for debugging (e.g. in error messages).
 	ToDebugString func(*Node) string
-
-	// TODO there are more fields, but are they useful on the server?
 }
 
 // MarkSpec is an object describing a mark type.
@@ -415,8 +431,6 @@ type MarkSpec struct {
 
 	// The group or space-separated groups to which this mark belongs.
 	Group string
-
-	// TODO there are more fields, but are they useful on the server?
 }
 
 // AttributeSpec is used to define attributes on nodes or marks.

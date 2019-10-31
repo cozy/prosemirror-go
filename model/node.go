@@ -144,22 +144,7 @@ func (n *Node) HasMarkup(typ *NodeType, args ...interface{}) bool {
 		attrs = typ.DefaultAttrs
 	}
 	if !reflect.DeepEqual(n.Attrs, attrs) {
-		// TODO fix this bug
-		if _, ok := n.Attrs["nodeType"]; ok {
-			return false
-		}
-		nt, ok := attrs["nodeType"]
-		if !ok {
-			return false
-		}
-		if n.Attrs == nil {
-			n.Attrs = map[string]interface{}{}
-		}
-		n.Attrs["nodeType"] = nt
-		if !reflect.DeepEqual(n.Attrs, attrs) {
-			return false
-		}
-		// TODO return false
+		return false
 	}
 	marks := NoMarks
 	if len(args) > 1 {
@@ -392,8 +377,6 @@ func (n *Node) withText(text string) *Node {
 	}
 	return NewTextNode(n.Type, n.Attrs, text, n.Marks)
 }
-
-// TODO
 
 func wrapMarks(marks []*Mark, str string) string {
 	for i := len(marks) - 1; i >= 0; i-- {

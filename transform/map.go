@@ -20,8 +20,6 @@ type Mappable interface {
 	MapResult(pos int, assoc ...int) *MapResult
 }
 
-// TODO recovery
-
 // MapResult is an object representing a mapped position with extra
 // information.
 type MapResult struct {
@@ -140,7 +138,7 @@ func (sm *StepMap) String() string {
 	if sm.Inverted {
 		prefix = "-"
 	}
-	return fmt.Sprintf("%s%v", prefix, sm.Ranges) // TODO JSON.stringify
+	return fmt.Sprintf("%s%v", prefix, sm.Ranges)
 }
 
 // EmptyStepMap is an empty StepMap.
