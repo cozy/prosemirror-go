@@ -83,6 +83,23 @@ func (s *AddMarkStep) Map(mapping Mappable) Step {
 	return NewAddMarkStep(from.Pos, to.Pos, s.Mark)
 }
 
+// Merge is a method of the Step interface.
+func (s *AddMarkStep) Merge(other Step) (Step, bool) {
+	add, ok := other.(*AddMarkStep)
+	if ok && add.Mark.Eq(s.Mark) && s.From <= add.To && s.To >= add.From {
+		f := s.From
+		if f > add.From {
+			f = add.From
+		}
+		t := s.To
+		if t < add.To {
+			t = add.To
+		}
+		return NewAddMarkStep(f, t, s.Mark), true
+	}
+	return nil, false
+}
+
 var _ Step = &AddMarkStep{}
 
 // RemoveMarkStep adds a mark to all inline content between two positions.
@@ -128,6 +145,23 @@ func (s *RemoveMarkStep) Map(mapping Mappable) Step {
 		return nil
 	}
 	return NewRemoveMarkStep(from.Pos, to.Pos, s.Mark)
+}
+
+// Merge is a method of the Step interface.
+func (s *RemoveMarkStep) Merge(other Step) (Step, bool) {
+	rem, ok := other.(*RemoveMarkStep)
+	if ok && rem.Mark.Eq(s.Mark) && s.From <= rem.To && s.To >= rem.From {
+		f := s.From
+		if f > rem.From {
+			f = rem.From
+		}
+		t := s.To
+		if t < rem.To {
+			t = rem.To
+		}
+		return NewRemoveMarkStep(f, t, s.Mark), true
+	}
+	return nil, false
 }
 
 var _ Step = &RemoveMarkStep{}

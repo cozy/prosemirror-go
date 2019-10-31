@@ -32,6 +32,11 @@ type Step interface {
 	// that step with its positions adjusted, or null if the step was entirely
 	// deleted by the mapping.
 	Map(mapping Mappable) Step
+
+	// Merge tries to merge this step with another one, to be applied directly
+	// after it. Returns the merged step when possible, null if the steps can't
+	// be merged.
+	Merge(other Step) (Step, bool)
 }
 
 // StepResult is the result of applying a step. Contains either a new document
