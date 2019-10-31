@@ -103,6 +103,17 @@ func (n *Node) TextBetween(from, to int, args ...string) string {
 	return n.Content.textBetween(from, to, args...)
 }
 
+// FirstChild returns this node's first child, or null if there are no
+// children.
+func (n *Node) FirstChild() *Node {
+	return n.Content.FirstChild()
+}
+
+// LastChild returns this node's last child, or null if there are no children.
+func (n *Node) LastChild() *Node {
+	return n.Content.LastChild()
+}
+
 // Eq tests whether two nodes represent the same piece of document.
 func (n *Node) Eq(other *Node) bool {
 	if n == other {

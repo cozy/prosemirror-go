@@ -32,7 +32,9 @@ func NewReplaceStep(from, to int, slice *model.Slice, structure ...bool) *Replac
 
 // Apply is a method of the Step interface.
 func (s *ReplaceStep) Apply(doc *model.Node) StepResult {
-	// TODO
+	if s.Structure && contentBetween(doc, s.From, s.To) {
+		return Fail("Structure replace would overwrite content")
+	}
 	return FromReplace(doc, s.From, s.To, s.Slice)
 }
 
@@ -85,3 +87,27 @@ func (s *ReplaceStep) Merge(other Step) (Step, bool) {
 }
 
 var _ Step = &ReplaceStep{}
+
+func contentBetween(doc *model.Node, from, to int) bool {
+	dfrom, err := doc.Resolve(from)
+	if err != nil {
+		panic(err)
+	}
+	dist := to - from
+	depth := dfrom.Depth
+	for dist > 0 && depth > 0 && dfrom.IndexAfter(depth) == dfrom.Node(depth).ChildCount() {
+		depth--
+		dist--
+	}
+	if dist > 0 {
+		next := dfrom.Node(depth).MaybeChild(dfrom.IndexAfter(depth))
+		for dist > 0 {
+			if next == nil || next.IsLeaf() {
+				return true
+			}
+			next = next.FirstChild()
+			dist--
+		}
+	}
+	return false
+}

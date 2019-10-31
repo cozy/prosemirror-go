@@ -78,6 +78,21 @@ func (r *ResolvedPos) Index(depth ...int) int {
 	return r.Path[r.resolveDepth(d)*3+1].(int)
 }
 
+// IndexAfter returns the index pointing after this position into the ancestor
+// at the given level.
+func (r *ResolvedPos) IndexAfter(depth ...int) int {
+	var d *int
+	if len(depth) > 0 {
+		d = &depth[0]
+	}
+	rd := r.resolveDepth(d)
+	offset := 0
+	if rd == r.Depth && r.TextOffset() == 0 {
+		offset = 1
+	}
+	return r.Index(rd) + offset
+}
+
 // Start is the (absolute) position at the start of the node at the given
 // level.
 func (r *ResolvedPos) Start(depth ...int) int {
