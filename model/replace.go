@@ -1,6 +1,9 @@
 package model
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 // ReplaceError is the error type raised by Node.replace when given an invalid
 // replacement.
@@ -51,6 +54,24 @@ func (s *Slice) Size() int {
 	return s.Content.Size - s.OpenStart - s.OpenEnd
 }
 
+// InsertAt inserts a fragment at the given position.
+func (s *Slice) InsertAt(pos int, fragment *Fragment) *Slice {
+	content, _ := insertInto(s.Content, pos+s.OpenStart, fragment, nil)
+	if content == nil {
+		return nil
+	}
+	return NewSlice(content, s.OpenStart, s.OpenEnd)
+}
+
+// RemoveBetween removes content between the two given positions.
+func (s *Slice) RemoveBetween(from, to int) (*Slice, error) {
+	removed, err := removeRange(s.Content, from+s.OpenStart, to+s.OpenStart)
+	if err != nil {
+		return nil, err
+	}
+	return NewSlice(removed, s.OpenStart, s.OpenEnd), nil
+}
+
 // Eq tests whether this slice is equal to another slice.
 func (s *Slice) Eq(other *Slice) bool {
 	return s.Content.Eq(other.Content) && s.OpenStart == other.OpenStart && s.OpenEnd == other.OpenEnd
@@ -59,6 +80,60 @@ func (s *Slice) Eq(other *Slice) bool {
 // String returns a string representation of this slice.
 func (s *Slice) String() string {
 	return fmt.Sprintf("%s(%d,%d)", s.Content.String(), s.OpenStart, s.OpenEnd)
+}
+
+func removeRange(content *Fragment, from, to int) (*Fragment, error) {
+	index, offset, err := content.findIndex(from)
+	if err != nil {
+		return nil, err
+	}
+	child := content.MaybeChild(index)
+	indexTo, offsetTo, err := content.findIndex(to)
+	if err != nil {
+		return nil, err
+	}
+	if offset == from || child.IsText() {
+		if offsetTo != to {
+			child, err := content.Child(indexTo)
+			if err != nil {
+				return nil, err
+			}
+			if !child.IsText() {
+				return nil, errors.New("Removing non-flat range")
+			}
+		}
+		return content.Cut(0, from).Append(content.Cut(to)), nil
+	}
+	if index != indexTo {
+		return nil, errors.New("Removing non-flat range")
+	}
+	removed, err := removeRange(child.Content, from-offset-1, to-offset-1)
+	if err != nil {
+		return nil, err
+	}
+	return content.ReplaceChild(index, child.Copy(removed)), nil
+}
+
+func insertInto(content *Fragment, dist int, insert *Fragment, parent *Node) (*Fragment, error) {
+	index, offset, err := content.findIndex(dist)
+	if err != nil {
+		return nil, err
+	}
+	child := content.MaybeChild(index)
+	if offset == dist || child.IsText() {
+		if parent != nil && !parent.CanReplace(index, index, insert) {
+			return nil, nil
+		}
+		return content.Cut(0, dist).Append(insert).Append(content.Cut(dist)), nil
+	}
+	inner, err := insertInto(child.Content, dist-offset-1, insert, nil)
+	if err != nil {
+		return nil, err
+	}
+	if inner == nil {
+		return nil, nil
+	}
+	return content.ReplaceChild(index, child.Copy(inner)), nil
 }
 
 // EmptySlice is an empty slice.

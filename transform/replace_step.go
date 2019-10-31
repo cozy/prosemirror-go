@@ -88,6 +88,80 @@ func (s *ReplaceStep) Merge(other Step) (Step, bool) {
 
 var _ Step = &ReplaceStep{}
 
+// ReplaceAroundStep replaces a part of the document with a slice of content,
+// but preserve a range of the replaced content by moving it into the slice.
+type ReplaceAroundStep struct {
+	From      int
+	To        int
+	GapFrom   int
+	GapTo     int
+	Slice     *model.Slice
+	Insert    int
+	Structure bool
+}
+
+// NewReplaceAroundStep creates a replace-around step with the given range and
+// gap. insert should be the point in the slice into which the content of the
+// gap should be moved. structure has the same meaning as it has in the
+// ReplaceStep class.
+func NewReplaceAroundStep(from, to, gapFrom, gapTo int, slice *model.Slice, insert int, structure bool) *ReplaceAroundStep {
+	return &ReplaceAroundStep{from, to, gapFrom, gapTo, slice, insert, structure}
+}
+
+// Apply is a method of the Step interface.
+func (s *ReplaceAroundStep) Apply(doc *model.Node) StepResult {
+	if s.Structure && (contentBetween(doc, s.From, s.GapFrom) || contentBetween(doc, s.GapTo, s.To)) {
+		return Fail("Structure gap-replace would overwrite content")
+	}
+
+	gap := doc.Slice(s.GapFrom, s.GapTo)
+	if gap.OpenStart != 0 && gap.OpenEnd != 0 {
+		return Fail("Gap is not a flat range")
+	}
+	inserted := s.Slice.InsertAt(s.Insert, gap.Content)
+	if inserted == nil {
+		return Fail("Content does not fit in gap")
+	}
+	return FromReplace(doc, s.From, s.To, inserted)
+}
+
+// GetMap is a method of the Step interface.
+func (s *ReplaceAroundStep) GetMap() *StepMap {
+	return NewStepMap([]int{s.From, s.GapFrom - s.From, s.Insert,
+		s.GapTo, s.To - s.GapTo, s.Slice.Size() - s.Insert})
+}
+
+// Invert is a method of the Step interface.
+func (s *ReplaceAroundStep) Invert(doc *model.Node) Step {
+	gap := s.GapTo - s.GapFrom
+	removed, err := doc.Slice(s.From, s.To).RemoveBetween(s.GapFrom-s.From, s.GapTo-s.To)
+	if err != nil {
+		return nil
+	}
+	return NewReplaceAroundStep(s.From, s.From+s.Slice.Size()+gap,
+		s.From+s.Insert, s.From+s.Insert+gap,
+		removed, s.GapFrom-s.From, s.Structure)
+}
+
+// Map is a method of the Step interface.
+func (s *ReplaceAroundStep) Map(mapping Mappable) Step {
+	from := mapping.MapResult(s.From, 1)
+	to := mapping.MapResult(s.To, -1)
+	gapFrom := mapping.Map(s.GapFrom, -1)
+	gapTo := mapping.Map(s.GapTo, 1)
+	if from.Deleted && to.Deleted || gapFrom < from.Pos || gapTo > to.Pos {
+		return nil
+	}
+	return NewReplaceAroundStep(from.Pos, to.Pos, gapFrom, gapTo, s.Slice, s.Insert, s.Structure)
+}
+
+// Merge is a method of the Step interface.
+func (s *ReplaceAroundStep) Merge(other Step) (Step, bool) {
+	return nil, false
+}
+
+var _ Step = &ReplaceAroundStep{}
+
 func contentBetween(doc *model.Node, from, to int) bool {
 	dfrom, err := doc.Resolve(from)
 	if err != nil {

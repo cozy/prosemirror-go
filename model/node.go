@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 )
@@ -322,6 +323,57 @@ func (n *Node) String() string {
 		name += fmt.Sprintf("(%s)", n.Content.toStringInner())
 	}
 	return wrapMarks(n.Marks, name)
+}
+
+// ContentMatchAt gets the content match in this node at the given index.
+func (n *Node) ContentMatchAt(index int) (*ContentMatch, error) {
+	match := n.Type.ContentMatch.MatchFragment(n.Content, 0, index)
+	if match == nil {
+		return nil, errors.New("Called contentMatchAt on a node with invalid content")
+	}
+	return match, nil
+}
+
+// CanReplace tests whether replacing the range between from and to (by child
+// index) with the given replacement fragment (which defaults to the empty
+// fragment) would leave the node's content valid. You can optionally pass
+// start and end indices into the replacement fragment.
+//
+// :: (number, number, ?Fragment, ?number, ?number) → bool
+func (n *Node) CanReplace(from, to int, args ...interface{}) bool {
+	replacement := EmptyFragment
+	if len(args) > 0 {
+		replacement = args[0].(*Fragment)
+	}
+	start := 0
+	if len(args) > 1 {
+		start = args[1].(int)
+	}
+	var end int
+	if len(args) > 2 {
+		end = args[2].(int)
+	} else {
+		end = replacement.ChildCount()
+	}
+	match, err := n.ContentMatchAt(from)
+	if err != nil {
+		return false
+	}
+	one := match.MatchFragment(replacement, start, end)
+	var two *ContentMatch
+	if one != nil {
+		two = one.MatchFragment(n.Content, to)
+	}
+	if two == nil || !two.ValidEnd {
+		return false
+	}
+	for i := start; i < end; i++ {
+		child, err := replacement.Child(i)
+		if err == nil && !n.Type.AllowsMarks(child.Marks) {
+			return false
+		}
+	}
+	return true
 }
 
 // NewTextNode is a constructor for text Node.
