@@ -288,6 +288,12 @@ func (n *Node) IsBlock() bool {
 	return n.Type.IsBlock()
 }
 
+// IsInline returns true when this is an inline node (a text node or a node
+// that can appear among text).
+func (n *Node) IsInline() bool {
+	return n.Type.IsInline()
+}
+
 // IsLeaf returns true when this is a leaf node.
 func (n *Node) IsLeaf() bool {
 	return n.Type.IsLeaf()

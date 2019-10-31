@@ -145,3 +145,5 @@ func (sm *StepMap) String() string {
 
 // EmptyStepMap is an empty StepMap.
 var EmptyStepMap = NewStepMap(nil)
+
+var _ Mappable = &StepMap{}

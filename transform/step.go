@@ -17,7 +17,7 @@ type Step interface {
 	// object that either indicates failure, if the step can not be
 	// applied to this document, or indicates success by containing a
 	// transformed document.
-	Apply(doc *model.Node) *StepResult
+	Apply(doc *model.Node) StepResult
 
 	// GetMap gets the step map that represents the changes made by this step,
 	// and which can be used to transform between positions in the old and the
@@ -51,4 +51,14 @@ func OK(doc *model.Node) StepResult {
 // Fail creates a failed step result.
 func Fail(message string) StepResult {
 	return StepResult{Failed: message}
+}
+
+// FromReplace calls Node.replace with the given arguments. Create a successful
+// result if it succeeds, and a failed one if it throws a `ReplaceError`.
+func FromReplace(doc *model.Node, from, to int, slice *model.Slice) StepResult {
+	replaced, err := doc.Replace(from, to, slice)
+	if err != nil {
+		return Fail(err.Error())
+	}
+	return OK(replaced)
 }

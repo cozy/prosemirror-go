@@ -217,6 +217,11 @@ func (nt *NodeType) ValidContent(content *Fragment) bool {
 	return true
 }
 
+// AllowsMarkType checks whether the given mark type is allowed in this node.
+func (nt *NodeType) AllowsMarkType(markType *MarkType) bool {
+	return true // TODO
+}
+
 // AllowsMarks tests whether the given set of marks are allowed in this node.
 func (nt *NodeType) AllowsMarks(marks []*Mark) bool {
 	return true // TODO
