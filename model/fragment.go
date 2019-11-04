@@ -310,6 +310,39 @@ func (f *Fragment) toStringInner() string {
 	return str
 }
 
+// ToJSON creates a JSON-serializeable representation of this fragment.
+func (f *Fragment) ToJSON() interface{} {
+	if len(f.Content) == 0 {
+		return nil
+	}
+	var items []interface{}
+	for _, n := range f.Content {
+		items = append(items, n.ToJSON())
+	}
+	return items
+}
+
+// FragmentFromJSON deserializes a fragment from its JSON representation.
+func FragmentFromJSON(schema *Schema, value interface{}) (*Fragment, error) {
+	if value == nil {
+		return EmptyFragment, nil
+	}
+	items, ok := value.([]interface{})
+	if !ok {
+		return nil, errors.New("Invalid input for Fragment.fromJSON")
+	}
+	var nodes []*Node
+	for _, item := range items {
+		obj, _ := item.(map[string]interface{})
+		node, err := NodeFromJSON(schema, obj)
+		if err != nil {
+			return nil, err
+		}
+		nodes = append(nodes, node)
+	}
+	return NewFragment(nodes), nil
+}
+
 // FragmentFromArray builds a fragment from an array of nodes. Ensures that
 // adjacent text nodes with the same marks are joined together.
 func FragmentFromArray(array []*Node) *Fragment {

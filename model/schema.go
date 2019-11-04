@@ -3,6 +3,7 @@
 package model
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -620,6 +621,24 @@ func (s *Schema) Mark(typ interface{}, args ...map[string]interface{}) *Mark {
 		attrs = args[0]
 	}
 	return t.Create(attrs)
+}
+
+// NodeFromJSON deserializes a node from its JSON representation.
+func (s *Schema) NodeFromJSON(raw []byte) (*Node, error) {
+	var obj map[string]interface{}
+	if err := json.Unmarshal(raw, &obj); err != nil {
+		return nil, err
+	}
+	return NodeFromJSON(s, obj)
+}
+
+// MarkFromJSON deserializes a mark from its JSON representation.
+func (s *Schema) MarkFromJSON(raw []byte) (*Mark, error) {
+	var obj map[string]interface{}
+	if err := json.Unmarshal(raw, &obj); err != nil {
+		return nil, err
+	}
+	return MarkFromJSON(s, obj)
 }
 
 func (s *Schema) nodeType(name string) (*NodeType, error) {

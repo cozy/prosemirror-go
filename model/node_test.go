@@ -141,7 +141,28 @@ func TestNodeFrom(t *testing.T) {
 	from([]*Node{schema.Text("a"), schema.Text("b")}, p("ab"))
 }
 
-// TODO toJSON
+func TestNodeToJSON(t *testing.T) {
+	roundTrip := func(doc builder.NodeWithTag) {
+		result, err := NodeFromJSON(schema, doc.ToJSON())
+		assert.NoError(t, err)
+		assert.True(t, result.Eq(doc.Node))
+	}
+
+	// can serialize a simple node
+	roundTrip(doc(p("foo")))
+
+	// can serialize marks
+	roundTrip(doc(p("foo", em("bar", strong("baz")), " ", a("x"))))
+
+	// can serialize inline leaf nodes
+	roundTrip(doc(p("foo", em(img, "bar"))))
+
+	// can serialize block leaf nodes
+	roundTrip(doc(p("a"), hr, p("b"), p()))
+
+	// can serialize nested nodes
+	roundTrip(doc(blockquote(ul(li(p("a"), p("b")), li(p(img))), p("c")), p("d")))
+}
 
 func TestNodeToString(t *testing.T) {
 	customSchema, err := NewSchema(&SchemaSpec{

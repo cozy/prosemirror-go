@@ -101,7 +101,25 @@ func (m *Mark) Eq(other *Mark) bool {
 	return reflect.DeepEqual(m.Attrs, other.Attrs)
 }
 
-// TODO Marshal and Unmarshal JSON
+// ToJSON converts this mark to a JSON-serializeable representation.
+func (m *Mark) ToJSON() map[string]interface{} {
+	obj := map[string]interface{}{"type": m.Type.Name}
+	if len(m.Attrs) > 0 {
+		obj["attrs"] = m.Attrs
+	}
+	return obj
+}
+
+// MarkFromJSON deserializes a mark from its JSON representation.
+func MarkFromJSON(schema *Schema, raw map[string]interface{}) (*Mark, error) {
+	t, _ := raw["type"].(string)
+	typ, ok := schema.Marks[t]
+	if !ok {
+		return nil, fmt.Errorf("There is no mark %s in this schema", raw["type"])
+	}
+	attrs, _ := raw["attrs"].(map[string]interface{})
+	return typ.Create(attrs), nil
+}
 
 func sameMarks(a, b []*Mark) bool {
 	if len(a) != len(b) {

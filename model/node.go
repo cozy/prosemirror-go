@@ -361,6 +361,65 @@ func (n *Node) CanReplace(from, to int, args ...interface{}) bool {
 	return true
 }
 
+// ToJSON converts this node to a JSON-serializeable representation.
+func (n *Node) ToJSON() map[string]interface{} {
+	obj := map[string]interface{}{"type": n.Type.Name}
+	if len(n.Attrs) > 0 {
+		obj["attrs"] = n.Attrs
+	}
+	if n.Content.Size > 0 {
+		obj["content"] = n.Content.ToJSON()
+	}
+	if len(n.Marks) > 0 {
+		var marks []interface{}
+		for _, m := range n.Marks {
+			marks = append(marks, m.ToJSON())
+		}
+		obj["marks"] = marks
+	}
+	if n.IsText() {
+		obj["text"] = *n.Text
+	}
+	return obj
+}
+
+// NodeFromJSON deserializes a node from its JSON representation.
+func NodeFromJSON(schema *Schema, raw map[string]interface{}) (*Node, error) {
+	var marks []*Mark
+	if data, ok := raw["marks"]; ok {
+		items, ok := data.([]interface{})
+		if !ok {
+			return nil, errors.New("Invalid mark data for Node.fromJSON")
+		}
+		for _, item := range items {
+			obj, _ := item.(map[string]interface{})
+			m, err := MarkFromJSON(schema, obj)
+			if err != nil {
+				return nil, err
+			}
+			marks = append(marks, m)
+		}
+	}
+	if raw["type"] == "text" {
+		text, ok := raw["text"].(string)
+		if !ok {
+			return nil, errors.New("Invalid text node in JSON")
+		}
+		return schema.Text(text, marks), nil
+	}
+	content, err := FragmentFromJSON(schema, raw["content"])
+	if err != nil {
+		return nil, err
+	}
+	nodeType, _ := raw["type"].(string)
+	typ, err := schema.nodeType(nodeType)
+	if err != nil {
+		return nil, err
+	}
+	attrs, _ := raw["attrs"].(map[string]interface{})
+	return typ.Create(attrs, content, marks)
+}
+
 // NewTextNode is a constructor for text Node.
 func NewTextNode(typ *NodeType, attrs map[string]interface{}, text string, marks []*Mark) *Node {
 	return &Node{Type: typ, Attrs: attrs, Text: &text, Content: EmptyFragment, Marks: marks}
