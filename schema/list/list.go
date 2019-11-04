@@ -12,7 +12,7 @@ var (
 	orderedList = model.NodeSpec{
 		Key: "ordered_list",
 		Attrs: map[string]*model.AttributeSpec{
-			"order": {Default: 1},
+			"order": {Default: 1.0},
 		},
 	}
 

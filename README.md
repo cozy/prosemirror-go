@@ -20,9 +20,10 @@ in order to have the server part of the collaborative editing in Go.
    be ported, not things like translating a document to/from a DOM
    representation which are only useful on the clients.
 
-2. In go, the `map`s don't preserve the order of the key. `OrderedMap` in the
-   JS `schema` needs to be serialized in JSON to an array of tuples `[key,
-   value]` to keep the order:
+2. In go, the `map`s don't preserve the order of the key (and even the JSON
+   spec doesn't say that there is an order for object fields). `OrderedMap` in
+   the JS `schema` needs to be serialized in JSON to an array of tuples
+   `[key, value]` to keep the order:
 
 ```json
 [

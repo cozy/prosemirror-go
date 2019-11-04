@@ -395,37 +395,124 @@ type SchemaSpec struct {
 	TopNode string
 }
 
+// MarshalJSON creates a JSON representation of the SchemaSpec.
+func (s SchemaSpec) MarshalJSON() ([]byte, error) {
+	if len(s.Nodes) == 0 && len(s.Marks) == 0 && len(s.TopNode) == 0 {
+		return []byte(`{}`), nil
+	}
+
+	buf := make([]byte, 0, 4096)
+	if len(s.Nodes) > 0 {
+		buf = append(buf, []byte(`,"nodes":[`)...)
+		for _, node := range s.Nodes {
+			val, err := json.Marshal(node)
+			if err != nil {
+				return nil, err
+			}
+			buf = append(buf, []byte(`["`+node.Key+`",`)...)
+			buf = append(buf, val...)
+			buf = append(buf, ']', ',')
+		}
+		buf[len(buf)-1] = ']'
+	}
+
+	if len(s.Marks) > 0 {
+		buf = append(buf, []byte(`,"marks":[`)...)
+		for _, mark := range s.Marks {
+			val, err := json.Marshal(mark)
+			if err != nil {
+				return nil, err
+			}
+			buf = append(buf, []byte(`["`+mark.Key+`",`)...)
+			buf = append(buf, val...)
+			buf = append(buf, ']', ',')
+		}
+		buf[len(buf)-1] = ']'
+	}
+
+	if len(s.TopNode) > 0 {
+		buf = append(buf, []byte(`,"topNode":"`+s.TopNode+`"`)...)
+	}
+	buf[0] = '{'
+	buf = append(buf, '}')
+	return buf, nil
+}
+
+// UnmarshalJSON parses a JSON representation of a SchemaSpec.
+func (s *SchemaSpec) UnmarshalJSON(buf []byte) error {
+	var raw struct {
+		Nodes   [][2]json.RawMessage `json:"nodes"`
+		Marks   [][2]json.RawMessage `json:"marks"`
+		TopNode string               `json:"topNode"`
+	}
+	if err := json.Unmarshal(buf, &raw); err != nil {
+		fmt.Printf("1. err = %s\n", err)
+		return err
+	}
+
+	s.Nodes = s.Nodes[:0]
+	for _, n := range raw.Nodes {
+		var node NodeSpec
+		if err := json.Unmarshal(n[1], &node); err != nil {
+			return err
+		}
+		if len(n[0]) < 2 {
+			return errors.New("Invalid node key")
+		}
+		key := []byte(n[0])
+		node.Key = string(key[1 : len(key)-1]) // Remove the "" around the key
+		s.Nodes = append(s.Nodes, &node)
+	}
+
+	s.Marks = s.Marks[:0]
+	for _, m := range raw.Marks {
+		var mark MarkSpec
+		if err := json.Unmarshal(m[1], &mark); err != nil {
+			return err
+		}
+		if len(m[0]) < 2 {
+			return errors.New("Invalid mark key")
+		}
+		key := []byte(m[0])
+		mark.Key = string(key[1 : len(key)-1]) // Remove the "" around the key
+		s.Marks = append(s.Marks, &mark)
+	}
+
+	s.TopNode = raw.TopNode
+	return nil
+}
+
 // NodeSpec is an object describing a node type.
 type NodeSpec struct {
 	// In JavaScript, the NodeSpec are kept in an OrderedMap. In Go, the map
 	// doesn't preserve the order of the keys. Instead, an array is used, and
 	// the key is kept here.
-	Key string
+	Key string `json:"-"`
 
 	// The content expression for this node, as described in the schema guide.
 	// When not given, the node does not allow any content.
-	Content string
+	Content string `json:"content,omitempty"`
 
 	// The marks that are allowed inside of this node. May be a space-separated
 	// string referring to mark names or groups, "_" to explicitly allow all
 	// marks, or "" to disallow marks. When not given, nodes with inline
 	// content default to allowing all marks, other nodes default to not
 	// allowing marks.
-	Marks *string
+	Marks *string `json:"marks,omitempty"`
 
 	// The group or space-separated groups to which this node belongs, which
 	// can be referred to in the content expressions for the schema.
-	Group string
+	Group string `json:"group,omitempty"`
 
 	// Should be set to true for inline nodes. (Implied for text nodes.)
-	Inline bool
+	Inline bool `json:"inline,omitempty"`
 
 	// The attributes that nodes of this type get.
-	Attrs map[string]*AttributeSpec
+	Attrs map[string]*AttributeSpec `json:"attrs,omitempty"`
 
 	// Defines the default way a node of this type should be serialized to a
 	// string representation for debugging (e.g. in error messages).
-	ToDebugString func(*Node) string
+	ToDebugString func(*Node) string `json:"-"`
 }
 
 // MarkSpec is an object describing a mark type.
@@ -433,15 +520,15 @@ type MarkSpec struct {
 	// In JavaScript, the MarkSpec are kept in an OrderedMap. In Go, the map
 	// doesn't preserve the order of the keys. Instead, an array is used, and
 	// the key is kept here.
-	Key string
+	Key string `json:"-"`
 
 	// The attributes that marks of this type get.
-	Attrs map[string]*AttributeSpec
+	Attrs map[string]*AttributeSpec `json:"attrs,omitempty"`
 
 	// Whether this mark should be active when the cursor is positioned
 	// at its end (or at its start when that is also the start of the
 	// parent node). Defaults to true.
-	Inclusive *bool
+	Inclusive *bool `json:"inclusive,omitempty"`
 
 	// Determines which other marks this mark can coexist with. Should be a
 	// space-separated strings naming other marks or groups of marks. When a
@@ -455,10 +542,10 @@ type MarkSpec struct {
 	// set it to an empty string (or any string not containing the mark's own
 	// name) to allow multiple marks of a given type to coexist (as long as
 	// they have different attributes).
-	Excludes *string
+	Excludes *string `json:"excludes,omitempty"`
 
 	// The group or space-separated groups to which this mark belongs.
-	Group string
+	Group string `json:"group,omitempty"`
 }
 
 // AttributeSpec is used to define attributes on nodes or marks.
@@ -466,7 +553,7 @@ type AttributeSpec struct {
 	// The default value for this attribute, to use when no explicit value is
 	// provided. Attributes that have no default must be provided whenever a
 	// node or mark of a type that has them is created.
-	Default interface{}
+	Default interface{} `json:"default,omitempty"`
 }
 
 // Schema is a a document schema: it holds node and mark type objects for the
@@ -484,7 +571,6 @@ type Schema struct {
 }
 
 // NewSchema constructs a schema from a schema specification.
-// TODO should it take a SchemaSpec or a map[string]interface{} for spec parameter?
 func NewSchema(spec *SchemaSpec) (*Schema, error) {
 	schema := Schema{
 		Spec: spec,

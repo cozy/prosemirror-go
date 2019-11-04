@@ -9,7 +9,7 @@ var (
 	falsy = false
 
 	headingAttrs = map[string]*model.AttributeSpec{
-		"level": {Default: 1},
+		"level": {Default: 1.0},
 	}
 	imageAttrs = map[string]*model.AttributeSpec{
 		"src":   {},
