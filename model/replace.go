@@ -254,9 +254,8 @@ func addRange(start, end *ResolvedPos, depth int, target []*Node) ([]*Node, erro
 // replaceClose in Go is close in JS (close is a reserved keyword in go).
 func replaceClose(node *Node, content *Fragment) (*Node, error) {
 	if !node.Type.ValidContent(content) {
-		// TODO
-		// return nil, NewReplaceError("Invalid content for node %s", node.Type.Name)
 		fmt.Printf("Invalid content for node %s\n", node.Type.Name)
+		// return nil, NewReplaceError("Invalid content for node %s", node.Type.Name)
 	}
 	return node.Copy(content), nil
 }

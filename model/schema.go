@@ -315,26 +315,34 @@ type MarkType struct {
 	// The spec on which the type is based.
 	Spec     *MarkSpec
 	Excluded []*MarkType
-	// TODO
+	Attrs    map[string]*Attribute
+	Instance *Mark
 }
 
 // NewMarkType is the constructor for MarkType.
 func NewMarkType(name string, rank int, schema *Schema, spec *MarkSpec) *MarkType {
-	return &MarkType{
+	mt := &MarkType{
 		Name:   name,
 		Rank:   rank,
 		Schema: schema,
 		Spec:   spec,
-		// TODO attrs, excluded, instance
+		Attrs:  initAttrs(spec.Attrs),
 	}
+	defaults := defaultAttrs(mt.Attrs)
+	if len(defaults) > 0 {
+		mt.Instance = NewMark(mt, defaults)
+	}
+	return mt
 }
 
 // Create a mark of this type. attrs may be null or an object containing only
 // some of the mark's attributes. The others, if they have defaults, will be
 // added.
 func (mt *MarkType) Create(attrs map[string]interface{}) *Mark {
-	// TODO if (!attrs && this.instance) return this.instance
-	return NewMark(mt, attrs) // TODO computeAttrs
+	if len(mt.Attrs) == 0 && mt.Instance != nil {
+		return mt.Instance
+	}
+	return NewMark(mt, computeAttrs(mt.Attrs, attrs))
 }
 
 func compileMarkType(marks []*MarkSpec, schema *Schema) map[string]*MarkType {
@@ -596,7 +604,7 @@ func (s *Schema) Text(text string, marks ...[]*Mark) *Node {
 	if len(marks) > 0 {
 		set = MarkSetFrom(marks[0])
 	}
-	return NewTextNode(typ, nil, text, set) // TODO type.defaultAttrs instead of nil
+	return NewTextNode(typ, typ.DefaultAttrs, text, set)
 }
 
 // Mark creates a mark with the given type and attributes.
