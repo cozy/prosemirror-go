@@ -64,6 +64,9 @@ type NodeType struct {
 	DefaultAttrs map[string]interface{}
 	// The starting match of the node type's content expression.
 	ContentMatch *ContentMatch
+	// The set of marks allowed in this node. `null` means all marks are
+	// allowed.
+	MarkSet *[]*MarkType
 	// True if this node type has inline content.
 	InlineContent bool
 }
@@ -239,12 +242,28 @@ func (nt *NodeType) ValidContent(content *Fragment) bool {
 
 // AllowsMarkType checks whether the given mark type is allowed in this node.
 func (nt *NodeType) AllowsMarkType(markType *MarkType) bool {
-	return true // TODO
+	if nt.MarkSet == nil {
+		return true
+	}
+	for _, mt := range *nt.MarkSet {
+		if mt == markType {
+			return true
+		}
+	}
+	return false
 }
 
 // AllowsMarks tests whether the given set of marks are allowed in this node.
 func (nt *NodeType) AllowsMarks(marks []*Mark) bool {
-	return true // TODO
+	if nt.MarkSet == nil {
+		return true
+	}
+	for _, mark := range marks {
+		if !nt.AllowsMarkType(mark.Type) {
+			return false
+		}
+	}
+	return true
 }
 
 func compileNodeType(nodes []*NodeSpec, schema *Schema) (map[string]*NodeType, error) {
@@ -477,7 +496,7 @@ func NewSchema(spec *SchemaSpec) (*Schema, error) {
 			return nil, fmt.Errorf("%s cann not be both a node and a mark", prop)
 		}
 		contentExpr := typ.Spec.Content
-		// markExpr := typ.Spec.Marks
+		markExpr := typ.Spec.Marks
 		cm, ok := contentExprCache[contentExpr]
 		if !ok {
 			cm, err = ParseContentMatch(contentExpr, schema.Nodes)
@@ -489,10 +508,23 @@ func NewSchema(spec *SchemaSpec) (*Schema, error) {
 		}
 		typ.ContentMatch = cm
 		typ.InlineContent = typ.ContentMatch.inlineContent()
-		// TODO
-		// type.markSet = markExpr == "_" ? null :
-		//   markExpr ? gatherMarks(this, markExpr.split(" ")) :
-		//   markExpr == "" || !type.inlineContent ? [] : null
+		if markExpr == nil {
+			if !typ.InlineContent {
+				var set []*MarkType
+				typ.MarkSet = &set
+			}
+		} else if *markExpr == "" {
+			var set []*MarkType
+			typ.MarkSet = &set
+		} else if *markExpr == "_" {
+			typ.MarkSet = nil
+		} else {
+			set, err := gatherMarks(&schema, strings.Split(*markExpr, " "))
+			if err != nil {
+				return nil, err
+			}
+			typ.MarkSet = &set
+		}
 	}
 
 	for _, typ := range schema.Marks {

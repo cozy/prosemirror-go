@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"reflect"
+	"sort"
 )
 
 // Mark is a piece of information that can be attached to a node, such as it
@@ -139,7 +140,9 @@ func MarkSetFrom(marks ...interface{}) []*Mark {
 	if marks, ok := marks[0].([]*Mark); ok {
 		set := make([]*Mark, len(marks))
 		copy(set, marks)
-		// TODO copy.sort((a, b) => a.type.rank - b.type.rank)
+		sort.Slice(set, func(i, j int) bool {
+			return set[i].Type.Rank < set[j].Type.Rank
+		})
 		return set
 	}
 	panic(fmt.Errorf("Unexpected marks for MarkSetFrom: %#v", marks))
