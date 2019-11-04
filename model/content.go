@@ -136,7 +136,7 @@ func (cm *ContentMatch) FillBefore(after *Fragment, toEnd ...bool) *Fragment {
 		for i := 0; i < len(match.next); i += 2 {
 			typ := match.next[i].(*NodeType)
 			next := match.next[i+1].(*ContentMatch)
-			if !(typ.IsText() || typ.hasRequiredAttrs() || indexOf(seen, next) == -1) {
+			if !(typ.IsText() || typ.hasRequiredAttrs()) && indexOf(seen, next) == -1 {
 				seen = append(seen, next)
 				concat := make([]*NodeType, len(types), len(types)+1)
 				copy(concat, types)

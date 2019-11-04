@@ -509,7 +509,6 @@ func NewSchema(spec *SchemaSpec) (*Schema, error) {
 		if !ok {
 			cm, err = ParseContentMatch(contentExpr, schema.Nodes)
 			if err != nil {
-				fmt.Printf("ParseContentMatch error: %s\n", err) // TODO
 				return nil, err
 			}
 			contentExprCache[contentExpr] = cm

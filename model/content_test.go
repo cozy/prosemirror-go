@@ -1,7 +1,6 @@
 package model_test
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -36,7 +35,6 @@ func invalid(t *testing.T, expr, types string) {
 }
 
 func fill(t *testing.T, expr string, before, after builder.NodeWithTag, result interface{}) {
-	fmt.Printf("fill %s\n", expr)
 	filled := get(t, expr).MatchFragment(before.Content).FillBefore(after.Content, true)
 	if result != nil {
 		if assert.NotNil(t, filled) {
@@ -48,16 +46,17 @@ func fill(t *testing.T, expr string, before, after builder.NodeWithTag, result i
 }
 
 func fill3(t *testing.T, expr string, before, mid, after builder.NodeWithTag, args ...interface{}) {
-	fmt.Printf("fill3 %s\n", expr)
 	content := get(t, expr)
 	a := content.MatchFragment(before.Content).FillBefore(mid.Content)
 	var b *Fragment
 	if a != nil {
-		b = content.MatchFragment(before.Content.Append(a).Append(mid.Content)).FillBefore(after.Content)
+		b = content.MatchFragment(before.Content.Append(a).Append(mid.Content)).FillBefore(after.Content, true)
 	}
 	if len(args) > 1 && args[0] != nil {
-		assert.True(t, a.Eq(args[0].(builder.NodeWithTag).Content))
-		assert.True(t, b.Eq(args[1].(builder.NodeWithTag).Content))
+		expected := args[0].(builder.NodeWithTag).Content
+		assert.True(t, a.Eq(expected), "%s != %s\n", a.String(), expected.String())
+		expected = args[1].(builder.NodeWithTag).Content
+		assert.True(t, b.Eq(expected), "%s != %s\n", b.String(), expected.String())
 	} else {
 		assert.Nil(t, b)
 	}
@@ -154,8 +153,7 @@ func TestContentMatchFillBefore(t *testing.T) {
 	fill(t, "paragraph horizontal_rule paragraph", doc(p(), hr), doc(p()), doc())
 
 	// adds a node when necessary
-	// TODO
-	// fill(t, "paragraph horizontal_rule paragraph", doc(p()), doc(p()), doc(hr))
+	fill(t, "paragraph horizontal_rule paragraph", doc(p()), doc(p()), doc(hr))
 
 	// accepts an asterisk across the bound
 	fill(t, "hard_break*", p(br), p(br), p())
@@ -173,8 +171,7 @@ func TestContentMatchFillBefore(t *testing.T) {
 	fill(t, "hard_break+", p(br), p(br), p())
 
 	// adds an element for a content-less plus
-	// TODO
-	// fill(t, "hard_break+", p(), p(), p(br))
+	fill(t, "hard_break+", p(), p(), p(br))
 
 	// fails for a mismatched plus
 	fill(t, "hard_break+", p(), p(img), nil)
@@ -189,50 +186,41 @@ func TestContentMatchFillBefore(t *testing.T) {
 	fill(t, "heading+ paragraph+", doc(h1()), doc(p()), doc())
 
 	// accepts plus with no content after
-	// TODO
-	// fill(t, "heading+ paragraph+", doc(h1()), doc(), doc(p()))
+	fill(t, "heading+ paragraph+", doc(h1()), doc(), doc(p()))
 
 	// adds elements to match a count
-	// TODO
-	// fill(t, "hard_break{3}", p(br), p(br), p(br))
+	fill(t, "hard_break{3}", p(br), p(br), p(br))
 
 	// fails when there are too many elements
 	fill(t, "hard_break{3}", p(br, br), p(br, br), nil)
 
 	// adds elements for two counted groups
-	// TODO
-	// fill(t, "code_block{2} paragraph{2}", doc(pre()), doc(p()), doc(pre(), p()))
+	fill(t, "code_block{2} paragraph{2}", doc(pre()), doc(p()), doc(pre(), p()))
 
 	// doesn't include optional elements
-	// TODO
-	// fill(t, "heading paragraph? horizontal_rule", doc(h1()), doc(), doc(hr))
+	fill(t, "heading paragraph? horizontal_rule", doc(h1()), doc(), doc(hr))
 
 	// completes a sequence
-	// TODO
-	// fill3(t, "paragraph horizontal_rule paragraph horizontal_rule paragraph",
-	// 	doc(p()), doc(p()), doc(p()), doc(hr), doc(hr))
+	fill3(t, "paragraph horizontal_rule paragraph horizontal_rule paragraph",
+		doc(p()), doc(p()), doc(p()), doc(hr), doc(hr))
 
 	// accepts plus across two bounds
 	fill3(t, "code_block+ paragraph+",
 		doc(pre()), doc(pre()), doc(p()), doc(), doc())
 
 	// fills a plus from empty input
-	// TODO
-	// fill3(t, "code_block+ paragraph+",
-	// 	doc(), doc(), doc(), doc(), doc(pre(), p()))
+	fill3(t, "code_block+ paragraph+",
+		doc(), doc(), doc(), doc(), doc(pre(), p()))
 
 	// completes a count
-	// TODO
-	// fill3(t, "code_block{3} paragraph{3}",
-	// 	doc(pre()), doc(p()), doc(), doc(pre(), pre()), doc(p(), p()))
+	fill3(t, "code_block{3} paragraph{3}",
+		doc(pre()), doc(p()), doc(), doc(pre(), pre()), doc(p(), p()))
 
 	// fails on non-matching elements
-	// TODO
-	// fill3(t, "paragraph*", doc(p()), doc(pre()), doc(p()), nil)
+	fill3(t, "paragraph*", doc(p()), doc(pre()), doc(p()), nil)
 
 	// completes a plus across two bounds
-	// TODO
-	// fill3(t, "paragraph{4}", doc(p()), doc(p()), doc(p()), doc(), doc(p()))
+	fill3(t, "paragraph{4}", doc(p()), doc(p()), doc(p()), doc(), doc(p()))
 
 	// refuses to complete an overflown count across two bounds
 	fill3(t, "paragraph{2}", doc(p()), doc(p()), doc(p()), nil)
