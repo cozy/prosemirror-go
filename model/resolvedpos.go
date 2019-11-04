@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"sync"
 )
 
 // ResolvedPos means resolved position. You can resolve a position to get more
@@ -285,6 +286,29 @@ func resolvePos(doc *Node, pos int) (*ResolvedPos, error) {
 }
 
 func resolvePosCached(doc *Node, pos int) (*ResolvedPos, error) {
-	// TODO add cache
-	return resolvePos(doc, pos)
+	resolveCacheMutex.Lock()
+	defer resolveCacheMutex.Unlock()
+	for _, entry := range resolveCache {
+		if entry.doc == doc && entry.pos.Pos == pos {
+			return entry.pos, nil
+		}
+	}
+	result, err := resolvePos(doc, pos)
+	if err != nil {
+		return nil, err
+	}
+	resolveCache[resolveCachePos] = resolveEntry{doc, result}
+	resolveCachePos = (resolveCachePos + 1) % len(resolveCache)
+	return result, nil
 }
+
+type resolveEntry struct {
+	doc *Node
+	pos *ResolvedPos
+}
+
+var (
+	resolveCacheMutex sync.Mutex
+	resolveCache      = make([]resolveEntry, 12)
+	resolveCachePos   = 0
+)
