@@ -31,7 +31,7 @@ var Nodes = []*model.NodeSpec{
 	{Key: "paragraph", Content: "inline*", Group: "block"},
 
 	// A blockquote (<blockquote>) wrapping one or more blocks.
-	{Key: "blockquote", Content: "block+", Group: "Block"},
+	{Key: "blockquote", Content: "block+", Group: "block"},
 
 	// A horizontal rule (<hr>).
 	{Key: "horizontal_rule", Group: "block"},

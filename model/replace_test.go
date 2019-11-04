@@ -119,10 +119,9 @@ func TestNodeReplace(t *testing.T) {
 		"Inconsistent")
 
 	// rejects a bad fit
-	// TODO
-	// bad(doc("<a><b>"),
-	// 	doc(p("<a>foo<b>")),
-	// 	"Invalid content")
+	bad(doc("<a><b>"),
+		doc(p("<a>foo<b>")),
+		"Invalid content")
 
 	// rejects unjoinable content
 	bad(doc(ul(li(p("a")), "<a>"), "<b>"),
@@ -135,8 +134,7 @@ func TestNodeReplace(t *testing.T) {
 		"Cannot join")
 
 	// check content validity
-	// TODO
-	// bad(doc(blockquote("<a>", p("hi")), "<b>"),
-	// 	doc(blockquote("hi", "<a>"), "<b>"),
-	// 	"Invalid content")
+	bad(doc(blockquote("<a>", p("hi")), "<b>"),
+		doc(blockquote("hi", "<a>"), "<b>"),
+		"Invalid content")
 }
