@@ -466,7 +466,6 @@ func (s *SchemaSpec) UnmarshalJSON(buf []byte) error {
 		TopNode string               `json:"topNode"`
 	}
 	if err := json.Unmarshal(buf, &raw); err != nil {
-		fmt.Printf("1. err = %s\n", err)
 		return err
 	}
 

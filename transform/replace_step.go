@@ -2,7 +2,6 @@ package transform
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/cozy/prosemirror-go/model"
 )
@@ -67,7 +66,6 @@ func (s *ReplaceStep) Map(mapping Mappable) Step {
 func (s *ReplaceStep) Merge(other Step) (Step, bool) {
 	repl, ok := other.(*ReplaceStep)
 	if !ok || repl.Structure != s.Structure {
-		fmt.Printf("ok = %v\n", ok)
 		return nil, false
 	}
 	if s.From+s.Slice.Size() == repl.From && s.Slice.OpenStart == 0 && repl.Slice.OpenEnd == 0 {
