@@ -415,6 +415,81 @@ type SchemaSpec struct {
 	TopNode string
 }
 
+// SchemaSpecFromJSON returns a SchemaSpec from a JSON representation.
+func SchemaSpecFromJSON(raw map[string]interface{}) SchemaSpec {
+	var spec SchemaSpec
+
+	if nodes, ok := raw["nodes"].([]interface{}); ok {
+		for _, node := range nodes {
+			if tuple, ok := node.([]interface{}); ok && len(tuple) == 2 {
+				n := &NodeSpec{}
+				if key, ok := tuple[0].(string); ok {
+					n.Key = key
+				}
+				data, ok := tuple[1].(map[string]interface{})
+				if !ok {
+					continue
+				}
+				if content, ok := data["content"].(string); ok {
+					n.Content = content
+				}
+				if marks, ok := data["marks"].(string); ok {
+					n.Marks = &marks
+				}
+				if group, ok := data["group"].(string); ok {
+					n.Group = group
+				}
+				if inline, ok := data["inline"].(bool); ok {
+					n.Inline = inline
+				}
+				if attrs, ok := data["attrs"].(map[string]interface{}); ok {
+					n.Attrs = make(map[string]*AttributeSpec)
+					for k, v := range attrs {
+						attr, _ := v.(map[string]interface{})
+						n.Attrs[k] = &AttributeSpec{Default: attr["default"]}
+					}
+				}
+				spec.Nodes = append(spec.Nodes, n)
+			}
+		}
+	}
+
+	if marks, ok := raw["marks"].([]interface{}); ok {
+		for _, mark := range marks {
+			if tuple, ok := mark.([]interface{}); ok && len(tuple) == 2 {
+				m := &MarkSpec{}
+				if key, ok := tuple[0].(string); ok {
+					m.Key = key
+				}
+				data, ok := tuple[1].(map[string]interface{})
+				if !ok {
+					continue
+				}
+				if attrs, ok := data["attrs"].(map[string]interface{}); ok {
+					m.Attrs = make(map[string]*AttributeSpec)
+					for k, v := range attrs {
+						attr, _ := v.(map[string]interface{})
+						m.Attrs[k] = &AttributeSpec{Default: attr["default"]}
+					}
+				}
+				if incl, ok := data["inclusive"].(bool); ok {
+					m.Inclusive = &incl
+				}
+				if excl, ok := data["excludes"].(string); ok {
+					m.Excludes = &excl
+				}
+				if group, ok := data["group"].(string); ok {
+					m.Group = group
+				}
+				spec.Marks = append(spec.Marks, m)
+			}
+		}
+	}
+
+	spec.TopNode, _ = raw["topNode"].(string)
+	return spec
+}
+
 // MarshalJSON creates a JSON representation of the SchemaSpec.
 func (s SchemaSpec) MarshalJSON() ([]byte, error) {
 	if len(s.Nodes) == 0 && len(s.Marks) == 0 && len(s.TopNode) == 0 {
