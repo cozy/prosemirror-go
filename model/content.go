@@ -27,7 +27,7 @@ func NewContentMatch(validEnd bool) *ContentMatch {
 }
 
 // ParseContentMatch builds a ContentMatch from a string expression.
-func ParseContentMatch(str string, nodeTypes map[string]*NodeType) (*ContentMatch, error) {
+func ParseContentMatch(str string, nodeTypes []*NodeType) (*ContentMatch, error) {
 	stream := newTokenStream(str, nodeTypes)
 	if stream.next() == nil {
 		return EmptyContentMatch, nil
@@ -158,7 +158,7 @@ var EmptyContentMatch = NewContentMatch(true)
 
 type tokenStream struct {
 	str       string
-	nodeTypes map[string]*NodeType
+	nodeTypes []*NodeType
 	inline    *bool
 	pos       int
 	tokens    []string
@@ -166,7 +166,7 @@ type tokenStream struct {
 
 var splitter = regexp.MustCompile(`\w+|\S`)
 
-func newTokenStream(str string, nodeTypes map[string]*NodeType) *tokenStream {
+func newTokenStream(str string, nodeTypes []*NodeType) *tokenStream {
 	tokens := splitter.FindAllString(str, -1)
 	return &tokenStream{
 		str:       str,
@@ -301,7 +301,7 @@ func parseExprRange(stream *tokenStream, expr *exprType) (*exprType, error) {
 
 func resolveName(stream *tokenStream, name string) ([]*NodeType, error) {
 	types := stream.nodeTypes
-	if typ, ok := types[name]; ok {
+	if typ, ok := findNoteType(types, name); ok {
 		return []*NodeType{typ}, nil
 	}
 	var result []*NodeType

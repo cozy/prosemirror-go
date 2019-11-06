@@ -8,11 +8,12 @@ import (
 )
 
 func mkStep(from, to int, val string) Step {
+	mt, _ := schema.MarkType("em")
 	switch val {
 	case "+em":
-		return NewAddMarkStep(from, to, schema.Marks["em"].Create(nil))
+		return NewAddMarkStep(from, to, mt.Create(nil))
 	case "-em":
-		return NewRemoveMarkStep(from, to, schema.Marks["em"].Create(nil))
+		return NewRemoveMarkStep(from, to, mt.Create(nil))
 	default:
 		slice := model.EmptySlice
 		if val != "" {

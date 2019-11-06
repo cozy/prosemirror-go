@@ -18,8 +18,10 @@ func get(t *testing.T, expr string) *ContentMatch {
 func match(t *testing.T, expr, types string) bool {
 	m := get(t, expr)
 	var ts []*NodeType
-	for _, t := range strings.Fields(types) {
-		ts = append(ts, schema.Nodes[t])
+	for _, name := range strings.Fields(types) {
+		typ, err := schema.NodeType(name)
+		assert.NoError(t, err)
+		ts = append(ts, typ)
 	}
 	for i := 0; m != nil && i < len(ts); i++ {
 		m = m.MatchType(ts[i])

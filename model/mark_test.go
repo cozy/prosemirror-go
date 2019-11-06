@@ -58,7 +58,10 @@ func TestMarkAddToSet(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	custom := customSchema.Marks
+	custom := make(map[string]*MarkType)
+	for _, mt := range customSchema.Marks {
+		custom[mt.Name] = mt
+	}
 
 	remark1 := custom["remark"].Create(map[string]interface{}{"id": 1})
 	remark2 := custom["remark"].Create(map[string]interface{}{"id": 2})
@@ -221,7 +224,10 @@ func TestMarkResolvedPos(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	custom := customSchema.Marks
+	custom := make(map[string]*MarkType)
+	for _, mt := range customSchema.Marks {
+		custom[mt.Name] = mt
+	}
 
 	remark1 := custom["remark"].Create(map[string]interface{}{"id": 1})
 	remark2 := custom["remark"].Create(map[string]interface{}{"id": 2})

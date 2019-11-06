@@ -412,7 +412,7 @@ func NodeFromJSON(schema *Schema, raw map[string]interface{}) (*Node, error) {
 		return nil, err
 	}
 	nodeType, _ := raw["type"].(string)
-	typ, err := schema.nodeType(nodeType)
+	typ, err := schema.NodeType(nodeType)
 	if err != nil {
 		return nil, err
 	}

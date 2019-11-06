@@ -113,7 +113,7 @@ func (m *Mark) ToJSON() map[string]interface{} {
 // MarkFromJSON deserializes a mark from its JSON representation.
 func MarkFromJSON(schema *Schema, raw map[string]interface{}) (*Mark, error) {
 	t, _ := raw["type"].(string)
-	typ, ok := schema.Marks[t]
+	typ, ok := findMarkType(schema.Marks, t)
 	if !ok {
 		return nil, fmt.Errorf("There is no mark %s in this schema", raw["type"])
 	}

@@ -185,7 +185,9 @@ func TestNodeToString(t *testing.T) {
 	assert.Equal(t, customSchema.Text("hello").String(), "custom_text")
 
 	// should be respected by Fragment
-	hard, err := customSchema.Nodes["hard_break"].CreateChecked()
+	hardBreak, err := customSchema.NodeType("hard_break")
+	assert.NoError(t, err)
+	hard, err := hardBreak.CreateChecked()
 	assert.NoError(t, err)
 	assert.Equal(t,
 		FragmentFromArray(

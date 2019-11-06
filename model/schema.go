@@ -267,16 +267,26 @@ func (nt *NodeType) AllowsMarks(marks []*Mark) bool {
 	return true
 }
 
-func compileNodeType(nodes []*NodeSpec, schema *Schema) (map[string]*NodeType, error) {
-	result := map[string]*NodeType{}
+func findNoteType(types []*NodeType, key string) (*NodeType, bool) {
+	for _, t := range types {
+		if t.Name == key {
+			return t, true
+		}
+	}
+	return nil, false
+}
+
+func compileNodeType(nodes []*NodeSpec, schema *Schema) ([]*NodeType, error) {
+	var result []*NodeType
 	for _, n := range nodes {
-		result[n.Key] = NewNodeType(n.Key, schema, n)
+		nt := NewNodeType(n.Key, schema, n)
+		result = append(result, nt)
 	}
 	topType := schema.Spec.TopNode
-	if _, ok := result[topType]; !ok {
+	if _, ok := findNoteType(result, topType); !ok {
 		return nil, fmt.Errorf("The schema is missing its top node type (%s)", topType)
 	}
-	txt, ok := result["text"]
+	txt, ok := findNoteType(result, "text")
 	if !ok {
 		return nil, errors.New("Every schema needs a 'text' type")
 	}
@@ -346,10 +356,11 @@ func (mt *MarkType) Create(attrs map[string]interface{}) *Mark {
 	return NewMark(mt, computeAttrs(mt.Attrs, attrs))
 }
 
-func compileMarkType(marks []*MarkSpec, schema *Schema) map[string]*MarkType {
-	result := map[string]*MarkType{}
+func compileMarkType(marks []*MarkSpec, schema *Schema) []*MarkType {
+	var result []*MarkType
 	for i, m := range marks {
-		result[m.Key] = NewMarkType(m.Key, i, schema, m)
+		mt := NewMarkType(m.Key, i, schema, m)
+		result = append(result, mt)
 	}
 	return result
 }
@@ -375,6 +386,15 @@ func (mt *MarkType) Excludes(other *MarkType) bool {
 		}
 	}
 	return false
+}
+
+func findMarkType(types []*MarkType, key string) (*MarkType, bool) {
+	for _, t := range types {
+		if t.Name == key {
+			return t, true
+		}
+	}
+	return nil, false
 }
 
 // SchemaSpec is an object describing a schema, as passed to the Schema
@@ -564,10 +584,10 @@ type Schema struct {
 	Spec *SchemaSpec
 
 	// An object mapping the schema's node names to node type objects.
-	Nodes map[string]*NodeType
+	Nodes []*NodeType
 
 	// A map from mark names to mark type objects.
-	Marks map[string]*MarkType
+	Marks []*MarkType
 }
 
 // NewSchema constructs a schema from a schema specification.
@@ -586,9 +606,9 @@ func NewSchema(spec *SchemaSpec) (*Schema, error) {
 	schema.Marks = compileMarkType(spec.Marks, &schema)
 
 	contentExprCache := map[string]*ContentMatch{}
-	for prop, typ := range schema.Nodes {
-		if _, ok := schema.Marks[prop]; ok {
-			return nil, fmt.Errorf("%s cann not be both a node and a mark", prop)
+	for _, typ := range schema.Nodes {
+		if _, ok := findMarkType(schema.Marks, typ.Name); ok {
+			return nil, fmt.Errorf("%s can not be both a node and a mark", typ.Name)
 		}
 		contentExpr := typ.Spec.Content
 		markExpr := typ.Spec.Marks
@@ -653,7 +673,7 @@ func (s *Schema) Node(typ interface{}, args ...interface{}) (*Node, error) {
 		}
 	case string:
 		var err error
-		t, err = s.nodeType(typ)
+		t, err = s.NodeType(typ)
 		if err != nil {
 			return nil, err
 		}
@@ -685,7 +705,10 @@ func (s *Schema) Node(typ interface{}, args ...interface{}) (*Node, error) {
 
 // Text creates a text node in the schema. Empty text nodes are not allowed.
 func (s *Schema) Text(text string, marks ...[]*Mark) *Node {
-	typ := s.Nodes["text"]
+	typ, ok := findNoteType(s.Nodes, "text")
+	if !ok {
+		panic(errors.New("No text node type"))
+	}
 	set := NoMarks
 	if len(marks) > 0 {
 		set = MarkSetFrom(marks[0])
@@ -700,7 +723,7 @@ func (s *Schema) Mark(typ interface{}, args ...map[string]interface{}) *Mark {
 	case *MarkType:
 		t = typ
 	case string:
-		t = s.Marks[typ]
+		t, _ = findMarkType(s.Marks, typ)
 	}
 	var attrs map[string]interface{}
 	if len(args) > 0 {
@@ -727,8 +750,17 @@ func (s *Schema) MarkFromJSON(raw []byte) (*Mark, error) {
 	return MarkFromJSON(s, obj)
 }
 
-func (s *Schema) nodeType(name string) (*NodeType, error) {
-	if found, ok := s.Nodes[name]; ok {
+// NodeType returns the NodeType with the given name in this schema.
+func (s *Schema) NodeType(name string) (*NodeType, error) {
+	if found, ok := findNoteType(s.Nodes, name); ok {
+		return found, nil
+	}
+	return nil, fmt.Errorf("Unknown node type: %s", name)
+}
+
+// MarkType returns the MarkType with the given name in this schema.
+func (s *Schema) MarkType(name string) (*MarkType, error) {
+	if found, ok := findMarkType(s.Marks, name); ok {
 		return found, nil
 	}
 	return nil, fmt.Errorf("Unknown node type: %s", name)
@@ -737,7 +769,7 @@ func (s *Schema) nodeType(name string) (*NodeType, error) {
 func gatherMarks(schema *Schema, marks []string) ([]*MarkType, error) {
 	var found []*MarkType
 	for _, name := range marks {
-		mark, ok := schema.Marks[name]
+		mark, ok := findMarkType(schema.Marks, name)
 		if ok {
 			found = append(found, mark)
 		} else {

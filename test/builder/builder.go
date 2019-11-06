@@ -217,11 +217,11 @@ func mark(typ *model.MarkType, attrs map[string]interface{}) MarkBuilder {
 // node or mark the builder by this name should create.
 func Builders(schema *model.Schema, names map[string]Spec) map[string]interface{} {
 	result := map[string]interface{}{"schema": schema}
-	for name, typ := range schema.Nodes {
-		result[name] = block(typ, nil)
+	for _, typ := range schema.Nodes {
+		result[typ.Name] = block(typ, nil)
 	}
-	for name, typ := range schema.Marks {
-		result[name] = mark(typ, nil)
+	for _, typ := range schema.Marks {
+		result[typ.Name] = mark(typ, nil)
 	}
 
 	if len(names) > 0 {
@@ -233,9 +233,9 @@ func Builders(schema *model.Schema, names map[string]Spec) map[string]interface{
 			if !ok {
 				typeName = name
 			}
-			if typ, ok := schema.Nodes[typeName]; ok {
+			if typ, err := schema.NodeType(typeName); err == nil {
 				result[name] = block(typ, value)
-			} else if typ, ok := schema.Marks[typeName]; ok {
+			} else if typ, err := schema.MarkType(typeName); err == nil {
 				result[name] = mark(typ, value)
 			}
 		}
