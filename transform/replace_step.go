@@ -1,6 +1,7 @@
 package transform
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/cozy/prosemirror-go/model"
@@ -86,6 +87,50 @@ func (s *ReplaceStep) Merge(other Step) (Step, bool) {
 	return nil, false
 }
 
+// ToJSON is a method of the Step interface.
+func (s *ReplaceStep) ToJSON() map[string]interface{} {
+	obj := map[string]interface{}{
+		"type": "replace",
+		"from": s.From,
+		"to":   s.To,
+	}
+	if s.Slice.Size() > 0 {
+		obj["slice"] = s.Slice.ToJSON()
+	}
+	if s.Structure {
+		obj["structure"] = true
+	}
+	return obj
+}
+
+// ReplaceStepFromJSON builds an RemoveMarkStep from a JSON representation.
+func ReplaceStepFromJSON(schema *model.Schema, obj map[string]interface{}) (Step, error) {
+	var from, to int
+	switch f := obj["from"].(type) {
+	case int:
+		from = f
+	case float64:
+		from = int(f)
+	default:
+		return nil, errors.New("Invalid input for ReplaceStep.fromJSON")
+	}
+	switch t := obj["to"].(type) {
+	case int:
+		to = t
+	case float64:
+		to = int(t)
+	default:
+		return nil, errors.New("Invalid input for ReplaceStep.fromJSON")
+	}
+	raw, _ := obj["slice"].(map[string]interface{})
+	slice, err := model.SliceFromJSON(schema, raw)
+	if err != nil {
+		return nil, err
+	}
+	structure, _ := obj["structure"].(bool)
+	return NewReplaceStep(from, to, slice, structure), nil
+}
+
 var _ Step = &ReplaceStep{}
 
 // ReplaceAroundStep replaces a part of the document with a slice of content,
@@ -158,6 +203,77 @@ func (s *ReplaceAroundStep) Map(mapping Mappable) Step {
 // Merge is a method of the Step interface.
 func (s *ReplaceAroundStep) Merge(other Step) (Step, bool) {
 	return nil, false
+}
+
+// ToJSON is a method of the Step interface.
+func (s *ReplaceAroundStep) ToJSON() map[string]interface{} {
+	obj := map[string]interface{}{
+		"type":    "replaceAround",
+		"from":    s.From,
+		"to":      s.To,
+		"gapFrom": s.GapFrom,
+		"gapTo":   s.GapTo,
+		"insert":  s.Insert,
+	}
+	if s.Slice.Size() > 0 {
+		obj["slice"] = s.Slice.ToJSON()
+	}
+	if s.Structure {
+		obj["structure"] = true
+	}
+	return obj
+}
+
+// ReplaceAroundStepFromJSON builds an RemoveMarkStep from a JSON representation.
+func ReplaceAroundStepFromJSON(schema *model.Schema, obj map[string]interface{}) (Step, error) {
+	var from, to, gapFrom, gapTo, insert int
+	switch f := obj["from"].(type) {
+	case int:
+		from = f
+	case float64:
+		from = int(f)
+	default:
+		return nil, errors.New("Invalid input for ReplaceAroundStep.fromJSON")
+	}
+	switch t := obj["to"].(type) {
+	case int:
+		to = t
+	case float64:
+		to = int(t)
+	default:
+		return nil, errors.New("Invalid input for ReplaceAroundStep.fromJSON")
+	}
+	switch f := obj["gapFrom"].(type) {
+	case int:
+		gapFrom = f
+	case float64:
+		gapFrom = int(f)
+	default:
+		return nil, errors.New("Invalid input for ReplaceAroundStep.fromJSON")
+	}
+	switch t := obj["gapTo"].(type) {
+	case int:
+		gapTo = t
+	case float64:
+		gapTo = int(t)
+	default:
+		return nil, errors.New("Invalid input for ReplaceAroundStep.fromJSON")
+	}
+	switch n := obj["insert"].(type) {
+	case int:
+		insert = n
+	case float64:
+		insert = int(n)
+	default:
+		return nil, errors.New("Invalid input for ReplaceAroundStep.fromJSON")
+	}
+	raw, _ := obj["slice"].(map[string]interface{})
+	slice, err := model.SliceFromJSON(schema, raw)
+	if err != nil {
+		return nil, err
+	}
+	structure, _ := obj["structure"].(bool)
+	return NewReplaceAroundStep(from, to, gapFrom, gapTo, slice, insert, structure), nil
 }
 
 var _ Step = &ReplaceAroundStep{}

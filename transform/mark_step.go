@@ -1,6 +1,10 @@
 package transform
 
-import "github.com/cozy/prosemirror-go/model"
+import (
+	"errors"
+
+	"github.com/cozy/prosemirror-go/model"
+)
 
 type mapFn func(node, parent *model.Node) *model.Node
 
@@ -100,6 +104,42 @@ func (s *AddMarkStep) Merge(other Step) (Step, bool) {
 	return nil, false
 }
 
+// ToJSON is a method of the Step interface.
+func (s *AddMarkStep) ToJSON() map[string]interface{} {
+	return map[string]interface{}{
+		"type": "addMark",
+		"mark": s.Mark.ToJSON(),
+		"from": s.From,
+		"to":   s.To,
+	}
+}
+
+// AddMarkStepFromJSON builds an AddMarkStep from a JSON representation.
+func AddMarkStepFromJSON(schema *model.Schema, obj map[string]interface{}) (Step, error) {
+	raw, ok := obj["mark"].(map[string]interface{})
+	if !ok {
+		return nil, errors.New("Invalid input for AddMarkStep.fromJSON")
+	}
+	mark, err := model.MarkFromJSON(schema, raw)
+	if err != nil {
+		return nil, err
+	}
+	var from, to int
+	switch f := obj["from"].(type) {
+	case int:
+		from = f
+	case float64:
+		from = int(f)
+	}
+	switch t := obj["to"].(type) {
+	case int:
+		to = t
+	case float64:
+		to = int(t)
+	}
+	return NewAddMarkStep(from, to, mark), nil
+}
+
 var _ Step = &AddMarkStep{}
 
 // RemoveMarkStep adds a mark to all inline content between two positions.
@@ -162,6 +202,42 @@ func (s *RemoveMarkStep) Merge(other Step) (Step, bool) {
 		return NewRemoveMarkStep(f, t, s.Mark), true
 	}
 	return nil, false
+}
+
+// ToJSON is a method of the Step interface.
+func (s *RemoveMarkStep) ToJSON() map[string]interface{} {
+	return map[string]interface{}{
+		"type": "removeMark",
+		"mark": s.Mark.ToJSON(),
+		"from": s.From,
+		"to":   s.To,
+	}
+}
+
+// RemoveMarkStepFromJSON builds an RemoveMarkStep from a JSON representation.
+func RemoveMarkStepFromJSON(schema *model.Schema, obj map[string]interface{}) (Step, error) {
+	raw, ok := obj["mark"].(map[string]interface{})
+	if !ok {
+		return nil, errors.New("Invalid input for RemoveMarkStep.fromJSON")
+	}
+	mark, err := model.MarkFromJSON(schema, raw)
+	if err != nil {
+		return nil, err
+	}
+	var from, to int
+	switch f := obj["from"].(type) {
+	case int:
+		from = f
+	case float64:
+		from = int(f)
+	}
+	switch t := obj["to"].(type) {
+	case int:
+		to = t
+	case float64:
+		to = int(t)
+	}
+	return NewRemoveMarkStep(from, to, mark), nil
 }
 
 var _ Step = &RemoveMarkStep{}

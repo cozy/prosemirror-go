@@ -3,7 +3,12 @@
 // and reasoned about.
 package transform
 
-import "github.com/cozy/prosemirror-go/model"
+import (
+	"errors"
+	"fmt"
+
+	"github.com/cozy/prosemirror-go/model"
+)
 
 // Step objects represent an atomic change. It generally applies only to the
 // document it was created for, since the positions stored in it will only make
@@ -37,6 +42,37 @@ type Step interface {
 	// after it. Returns the merged step when possible, null if the steps can't
 	// be merged.
 	Merge(other Step) (Step, bool)
+
+	// ToJSON creates a JSON-serializeable representation of this step. When
+	// defining this for a custom subclass, make sure the result object
+	// includes the step type's JSON id under the stepType property.
+	ToJSON() map[string]interface{}
+}
+
+type stepBuilder func(*model.Schema, map[string]interface{}) (Step, error)
+
+var stepsByID = map[string]stepBuilder{
+	"addMark":       AddMarkStepFromJSON,
+	"removeMark":    RemoveMarkStepFromJSON,
+	"replace":       ReplaceStepFromJSON,
+	"replaceAround": ReplaceAroundStepFromJSON,
+}
+
+// StepFromJSON deserializes a step from its JSON representation. Will call
+// through to the step class' own implementation of this method.
+func StepFromJSON(schema *model.Schema, obj map[string]interface{}) (Step, error) {
+	if len(obj) == 0 {
+		return nil, errors.New("Invalid input from Step.fromJSON")
+	}
+	stepType, ok := obj["stepType"].(string)
+	if !ok {
+		return nil, errors.New("Invalid input from Step.fromJSON")
+	}
+	builder, ok := stepsByID[stepType]
+	if !ok {
+		return nil, fmt.Errorf("No step %s defined", stepType)
+	}
+	return builder(schema, obj)
 }
 
 // StepResult is the result of applying a step. Contains either a new document

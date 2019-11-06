@@ -82,6 +82,52 @@ func (s *Slice) String() string {
 	return fmt.Sprintf("%s(%d,%d)", s.Content.String(), s.OpenStart, s.OpenEnd)
 }
 
+// ToJSON converts a slice to a JSON-serializable representation.
+func (s *Slice) ToJSON() interface{} {
+	if s.Content.Size == 0 {
+		return nil
+	}
+	obj := map[string]interface{}{
+		"content": s.Content.ToJSON(),
+	}
+	if s.OpenStart > 0 {
+		obj["openStart"] = s.OpenStart
+	}
+	if s.OpenEnd > 0 {
+		obj["openEnd"] = s.OpenEnd
+	}
+	return obj
+}
+
+// SliceFromJSON deserializes a slice from its JSON representation.
+func SliceFromJSON(schema *Schema, obj interface{}) (*Slice, error) {
+	if obj == nil {
+		return EmptySlice, nil
+	}
+	data, ok := obj.(map[string]interface{})
+	if !ok {
+		return EmptySlice, nil
+	}
+	var openStart, openEnd int
+	switch o := data["openStart"].(type) {
+	case int:
+		openStart = o
+	case float64:
+		openStart = int(o)
+	}
+	switch o := data["openEnd"].(type) {
+	case int:
+		openEnd = o
+	case float64:
+		openEnd = int(o)
+	}
+	fragment, err := FragmentFromJSON(schema, data["content"])
+	if err != nil {
+		return nil, err
+	}
+	return NewSlice(fragment, openStart, openEnd), nil
+}
+
 func removeRange(content *Fragment, from, to int) (*Fragment, error) {
 	index, offset, err := content.findIndex(from)
 	if err != nil {
