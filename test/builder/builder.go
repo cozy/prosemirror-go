@@ -107,7 +107,12 @@ func flatten(schema *model.Schema, children []interface{}, f nodeMapper) Result 
 				if c != '<' {
 					continue
 				}
+				space := false
 				for j, c := range child[i:] { // j == m[0].length
+					if c == ' ' {
+						space = true
+						break
+					}
 					if c == '>' {
 						out += child[at:i]
 						pos += i - at
@@ -115,6 +120,9 @@ func flatten(schema *model.Schema, children []interface{}, f nodeMapper) Result 
 						tag[child[i+1:i+j]] = pos
 						break
 					}
+				}
+				if space {
+					break
 				}
 			}
 			out += child[at:]

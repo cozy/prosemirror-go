@@ -154,9 +154,8 @@ func TestMarkdown(t *testing.T) {
 		doc(p("one two"), hr, p("three")))
 
 	// ignores HTML tags
-	// TODO
-	// same("Foo < img> bar",
-	// 	doc(p("Foo < img> bar")))
+	same("Foo < img> bar",
+		doc(p("Foo < img> bar")))
 
 	// doesn't accidentally generate list markup
 	same("1\\. foo",
