@@ -217,7 +217,7 @@ func backticksFor(node *model.Node, side int) string {
 }
 
 func isPlainURL(link *model.Mark, parent *model.Node, index, side int) bool {
-	if _, ok := link.Attrs["title"]; ok {
+	if _, ok := link.Attrs["title"].(string); ok {
 		return false
 	}
 	x := 0

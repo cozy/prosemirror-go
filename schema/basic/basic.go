@@ -57,10 +57,6 @@ var Nodes = []*model.NodeSpec{
 
 // Marks are the specs for the marks in the schema.
 var Marks = []*model.MarkSpec{
-	// A link. Has href and title attributes. title defaults to the empty string.
-	// Rendered and parsed as an <a> element.
-	{Key: "link", Attrs: linkAttrs, Inclusive: &falsy},
-
 	// An emphasis mark. Rendered as an <em> element. Has parse rules that also
 	// match <i> and font-style: italic.
 	{Key: "em"},
@@ -68,6 +64,10 @@ var Marks = []*model.MarkSpec{
 	// A strong mark. Rendered as <strong>, parse rules also match <b> and
 	// font-weight: bold.
 	{Key: "strong"},
+
+	// A link. Has href and title attributes. title defaults to the empty string.
+	// Rendered and parsed as an <a> element.
+	{Key: "link", Attrs: linkAttrs, Inclusive: &falsy},
 
 	// Code font mark. Represented as a <code> element.
 	{Key: "code"},

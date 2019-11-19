@@ -97,7 +97,7 @@ func TestMarkAddToSet(t *testing.T) {
 	// replaces different marks with new attributes
 	assert.True(t, SameMarkSet(
 		link("http://bar").AddToSet([]*Mark{link("http://foo"), em2}),
-		[]*Mark{link("http://bar"), em2},
+		[]*Mark{em2, link("http://bar")},
 	))
 
 	// does nothing when adding an existing link

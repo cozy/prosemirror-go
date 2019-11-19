@@ -45,6 +45,7 @@ var (
 	strong     = out["strong"].(builder.MarkBuilder)
 	code       = out["code"].(builder.MarkBuilder)
 	img        = out["img"].(builder.NodeBuilder)
+	link       = out["link"].(builder.MarkBuilder)
 )
 
 func TestMarkdown(t *testing.T) {
@@ -106,14 +107,12 @@ func TestMarkdown(t *testing.T) {
 		doc(p("Hello. Some ", em("em"), " text, some ", strong("strong"), " text, and some ", code("code"))))
 
 	// parses overlapping inline marks
-	// TODO
-	// same("This is **strong *emphasized text with `code` in* it**",
-	// 	doc(p("This is ", strong("strong ", em("emphasized text with ", code("code"), " in"), " it"))))
+	same("This is **strong *emphasized text with `code` in* it**",
+		doc(p("This is ", strong("strong ", em("emphasized text with ", code("code"), " in"), " it"))))
 
 	// parses links inside strong text
-	// TODO
-	// same("**[link](foo) is bold**",
-	// 	doc(p(strong(a("link"), " is bold"))))
+	same("**[link](foo) is bold**",
+		doc(p(strong(a("link"), " is bold"))))
 
 	// parses code mark inside strong text
 	same("**`code` is bold**",
@@ -132,14 +131,12 @@ func TestMarkdown(t *testing.T) {
 		doc(p("My ", a("link"), " goes to foo")))
 
 	// parses urls
-	// TODO
-	// same("Link to <https://prosemirror.net>",
-	//      doc(p("Link to ", link({href: "https://prosemirror.net"}, "https://prosemirror.net"))))
+	same("Link to <https://prosemirror.net>",
+		doc(p("Link to ", link(map[string]interface{}{"href": "https://prosemirror.net"}, "https://prosemirror.net"))))
 
 	// parses emphasized urls
-	// TODO
-	// same("Link to *<https://prosemirror.net>*",
-	//      doc(p("Link to ", em(link({href: "https://prosemirror.net"}, "https://prosemirror.net")))))
+	same("Link to *<https://prosemirror.net>*",
+		doc(p("Link to ", em(link(map[string]interface{}{"href": "https://prosemirror.net"}, "https://prosemirror.net")))))
 
 	// parses an image
 	same("Here's an image: ![x](img.png)",
