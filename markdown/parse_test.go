@@ -172,9 +172,8 @@ func TestMarkdown(t *testing.T) {
 		"Some emphasized text with  ***whitespace***   surrounding the emphasis.")
 
 	// drops nodes when all whitespace is expelled from them
-	// TODO
-	// serialize(doc(p("Text with", em(" "), "an emphasized space")),
-	// 	"Text with an emphasized space")
+	serialize(doc(p("Text with", em(" "), "an emphasized space")),
+		"Text with an emphasized space")
 
 	// doesn't put a code block after a list item inside the list item
 	same("* list item\n\n```\ncode\n```",

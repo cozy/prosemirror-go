@@ -446,8 +446,10 @@ func (s *SerializerState) RenderInline(parent *model.Node) {
 					leading += parts[1]
 					trailing = parts[3]
 					if parts[1] != "" || parts[3] != "" {
-						if node != nil {
-							node = node.WithText(parts[2])
+						if inner := parts[2]; inner != "" {
+							node = node.WithText(inner)
+						} else {
+							node = nil
 						}
 						if node == nil {
 							marks = active
