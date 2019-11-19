@@ -3,28 +3,48 @@ package markdown
 import (
 	"testing"
 
+	"github.com/cozy/prosemirror-go/model"
+	"github.com/cozy/prosemirror-go/schema/basic"
+	"github.com/cozy/prosemirror-go/schema/list"
 	"github.com/cozy/prosemirror-go/test/builder"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	// schema     = builder.Schema
-	doc        = builder.Doc
-	blockquote = builder.Blockquote
-	h1         = builder.H1
-	h2         = builder.H2
-	p          = builder.P
-	ol         = builder.Ol
-	ul         = builder.Ul
-	li         = builder.Li
-	a          = builder.A
-	pre        = builder.Pre
-	// img        = builder.Img
-	br     = builder.Br
-	hr     = builder.Hr
-	em     = builder.Em
-	strong = builder.Strong
-	code   = builder.Code
+	schema, _ = model.NewSchema(&model.SchemaSpec{
+		Nodes: list.AddListNodes(basic.Schema.Spec.Nodes, "paragraph block*", "block"),
+		Marks: basic.Schema.Spec.Marks,
+	})
+	out = builder.Builders(schema, map[string]builder.Spec{
+		"p":   {"nodeType": "paragraph"},
+		"h1":  {"nodeType": "heading", "level": 1},
+		"h2":  {"nodeType": "heading", "level": 2},
+		"hr":  {"nodeType": "horizontal_rule"},
+		"li":  {"nodeType": "list_item"},
+		"ol":  {"nodeType": "ordered_list"},
+		"ul":  {"nodeType": "bullet_list"},
+		"pre": {"nodeType": "code_block"},
+		"a":   {"markType": "link", "href": "foo"},
+		"br":  {"nodeType": "hard_break"},
+		"img": {"nodeType": "image", "src": "img.png", "alt": "x"},
+	})
+
+	doc        = out["doc"].(builder.NodeBuilder)
+	blockquote = out["blockquote"].(builder.NodeBuilder)
+	p          = out["p"].(builder.NodeBuilder)
+	h1         = out["h1"].(builder.NodeBuilder)
+	h2         = out["h2"].(builder.NodeBuilder)
+	hr         = out["hr"].(builder.NodeBuilder)
+	li         = out["li"].(builder.NodeBuilder)
+	ol         = out["ol"].(builder.NodeBuilder)
+	ul         = out["ul"].(builder.NodeBuilder)
+	pre        = out["pre"].(builder.NodeBuilder)
+	a          = out["a"].(builder.MarkBuilder)
+	br         = out["br"].(builder.NodeBuilder)
+	em         = out["em"].(builder.MarkBuilder)
+	strong     = out["strong"].(builder.MarkBuilder)
+	code       = out["code"].(builder.MarkBuilder)
+	img        = out["img"].(builder.NodeBuilder)
 )
 
 func TestMarkdown(t *testing.T) {
@@ -122,9 +142,8 @@ func TestMarkdown(t *testing.T) {
 	//      doc(p("Link to ", em(link({href: "https://prosemirror.net"}, "https://prosemirror.net")))))
 
 	// parses an image
-	// TODO
-	// same("Here's an image: ![x](img.png)",
-	// 	doc(p("Here's an image: ", img)))
+	same("Here's an image: ![x](img.png)",
+		doc(p("Here's an image: ", img)))
 
 	// parses a line break
 	same("line one\\\nline two",

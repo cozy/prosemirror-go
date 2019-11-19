@@ -132,12 +132,12 @@ var DefaultSerializer = NewSerializer(map[string]NodeSerializerFunc{
 	},
 	"image": func(state *SerializerState, node, _parent *model.Node, _index int) {
 		alt, _ := node.Attrs["alt"].(string)
-		src, _ := node.Attrs["alt"].(string)
+		src, _ := node.Attrs["src"].(string)
 		title := ""
 		if t, ok := node.Attrs["title"].(string); ok {
 			title = state.Quote(t)
 		}
-		state.Write(fmt.Sprintf("[%s](%s)%s", state.Esc(alt), state.Esc(src), title))
+		state.Write(fmt.Sprintf("![%s](%s)%s", state.Esc(alt), state.Esc(src), title))
 	},
 	"hard_break": func(state *SerializerState, node, parent *model.Node, index int) {
 		for i := index; i < parent.ChildCount(); i++ {
