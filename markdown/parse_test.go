@@ -11,8 +11,32 @@ import (
 )
 
 var (
+	empty        = ""
+	headingAttrs = map[string]*model.AttributeSpec{
+		"level": {Default: 1.0},
+	}
+	codeAttrs = map[string]*model.AttributeSpec{
+		"params": {Default: ""},
+	}
+	imageAttrs = map[string]*model.AttributeSpec{
+		"src":   {},
+		"alt":   {Default: nil},
+		"title": {Default: nil},
+	}
+	nodes = []*model.NodeSpec{
+		{Key: "doc", Content: "block+"},
+		{Key: "paragraph", Content: "inline*", Group: "block"},
+		{Key: "blockquote", Content: "block+", Group: "block"},
+		{Key: "horizontal_rule", Group: "block"},
+		{Key: "heading", Content: "inline*", Group: "block", Attrs: headingAttrs},
+		{Key: "code_block", Content: "text*", Marks: &empty, Group: "block", Attrs: codeAttrs},
+		{Key: "text", Group: "inline"},
+		{Key: "image", Group: "inline", Inline: true, Attrs: imageAttrs},
+		{Key: "hard_break", Group: "inline", Inline: true},
+	}
+
 	schema, _ = model.NewSchema(&model.SchemaSpec{
-		Nodes: list.AddListNodes(basic.Schema.Spec.Nodes, "paragraph block*", "block"),
+		Nodes: list.AddListNodes(nodes, "paragraph block*", "block"),
 		Marks: basic.Schema.Spec.Marks,
 	})
 	out = builder.Builders(schema, map[string]builder.Spec{
@@ -50,7 +74,7 @@ var (
 
 func TestMarkdown(t *testing.T) {
 	parse := func(text string, doc builder.NodeWithTag) {
-		// TODO
+		// TODO uncomment when parsing markdown will be implemented
 		// actual := DefaultParser.parse(text)
 		// expected := doc.Node
 		// assert.True(t, actual.Eq(expected), "%s != %s\n", actual.String(), expected.String())
@@ -89,18 +113,20 @@ func TestMarkdown(t *testing.T) {
 		doc(ol(li(p("Hello")), li(p("Goodbye")), li(p("Nest"), ol(li(p("Hey")), li(p("Aye")))))))
 
 	// parses a code block
-	// TODO
-	// same("Some code:\n\n```\nHere it is\n```\n\nPara",
-	//      doc(p("Some code:"), schema.node("code_block", {params: ""}, [schema.text("Here it is")]), p("Para")))
+	node, err := schema.Node("code_block", map[string]interface{}{"params": ""}, []interface{}{schema.Text("Here it is")})
+	assert.NoError(t, err)
+	same("Some code:\n\n```\nHere it is\n```\n\nPara",
+		doc(p("Some code:"), node, p("Para")))
 
 	// parses an intended code block
 	parse("Some code:\n\n    Here it is\n\nPara",
 		doc(p("Some code:"), pre("Here it is"), p("Para")))
 
 	// parses a fenced code block with info string
-	// TODO
-	// same("foo\n\n```javascript\n1\n```",
-	//      doc(p("foo"), schema.node("code_block", {params: "javascript"}, [schema.text("1")])))
+	node, err = schema.Node("code_block", map[string]interface{}{"params": "javascript"}, []interface{}{schema.Text("1")})
+	assert.NoError(t, err)
+	same("foo\n\n```javascript\n1\n```",
+		doc(p("foo"), node))
 
 	// parses inline marks
 	same("Hello. Some *em* text, some **strong** text, and some `code`",

@@ -144,6 +144,10 @@ func flatten(schema *model.Schema, children []interface{}, f nodeMapper) Result 
 			node := f(child().Node)
 			pos += node.NodeSize()
 			result = append(result, node)
+		case *model.Node:
+			node := f(child)
+			pos += node.NodeSize()
+			result = append(result, node)
 		default:
 			fmt.Printf("Unknown test type: %T (%v)\n", child, child)
 		}

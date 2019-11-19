@@ -83,7 +83,7 @@ var DefaultSerializer = NewSerializer(map[string]NodeSerializerFunc{
 		state.WrapBlock("> ", nil, node, func() { state.RenderContent(node) })
 	},
 	"code_block": func(state *SerializerState, node, _parent *model.Node, _index int) {
-		params, _ := node.Attrs[""].(string)
+		params, _ := node.Attrs["params"].(string)
 		state.Write("```" + params + "\n")
 		state.Text(node.TextContent(), false)
 		state.EnsureNewLine()

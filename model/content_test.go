@@ -40,7 +40,8 @@ func fill(t *testing.T, expr string, before, after builder.NodeWithTag, result i
 	filled := get(t, expr).MatchFragment(before.Content).FillBefore(after.Content, true)
 	if result != nil {
 		if assert.NotNil(t, filled) {
-			assert.True(t, filled.Eq(result.(builder.NodeWithTag).Content))
+			content := result.(builder.NodeWithTag).Content
+			assert.True(t, filled.Eq(content), "%s != %s", filled, content)
 		}
 	} else {
 		assert.Nil(t, filled)
