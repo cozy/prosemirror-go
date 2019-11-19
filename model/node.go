@@ -70,6 +70,12 @@ func (n *Node) MaybeChild(index int) *Node {
 	return n.Content.MaybeChild(index)
 }
 
+// ForEach calls fn for every child node, passing the node, its offset into this
+// parent node, and its index.
+func (n *Node) ForEach(fn func(node *Node, offset, index int)) {
+	n.Content.ForEach(fn)
+}
+
 // NodesBetween invokes a callback for all descendant nodes recursively between
 // the given two positions that are relative to start of this node's content.
 // The callback is invoked with the node, its parent-relative position, its
@@ -186,7 +192,7 @@ func (n *Node) Cut(from int, to ...int) *Node {
 		if from == 0 && t == len(*n.Text) {
 			return n
 		}
-		return n.withText((*n.Text)[from:t])
+		return n.WithText((*n.Text)[from:t])
 	}
 	if len(to) == 0 {
 		return n.Copy(n.Content.Cut(from))
@@ -430,7 +436,8 @@ func (n *Node) IsText() bool {
 	return n.Text != nil
 }
 
-func (n *Node) withText(text string) *Node {
+// WithText returns a new text node with the given string.
+func (n *Node) WithText(text string) *Node {
 	if text == *n.Text {
 		return n
 	}

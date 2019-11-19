@@ -247,7 +247,7 @@ func joinable(before, after *ResolvedPos, depth int) (*Node, error) {
 func addNode(child *Node, target []*Node) []*Node {
 	last := len(target) - 1
 	if last >= 0 && child.IsText() && child.SameMarkup(target[last]) {
-		target[last] = child.withText(*target[last].Text + *child.Text)
+		target[last] = child.WithText(*target[last].Text + *child.Text)
 	} else {
 		target = append(target, child)
 	}

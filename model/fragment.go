@@ -117,7 +117,7 @@ func (f *Fragment) Append(other *Fragment) *Fragment {
 	copy(content, f.Content)
 	i := 0
 	if last.IsText() && last.SameMarkup(first) {
-		content[len(content)-1] = last.withText(*last.Text + *first.Text)
+		content[len(content)-1] = last.WithText(*last.Text + *first.Text)
 		i = 1
 	}
 	content = append(content, other.Content[i:]...)
@@ -236,6 +236,16 @@ func (f *Fragment) MaybeChild(index int) *Node {
 		return nil
 	}
 	return f.Content[index]
+}
+
+// ForEach calls fn for every child node, passing the node, its offset into this
+// parent node, and its index.
+func (f *Fragment) ForEach(fn func(node *Node, offset, index int)) {
+	p := 0
+	for i, child := range f.Content {
+		fn(child, p, i)
+		p += child.NodeSize()
+	}
 }
 
 // FindDiffStart finds the first position at which this fragment and another
@@ -358,7 +368,7 @@ func FragmentFromArray(array []*Node) *Fragment {
 				joined = array[0:i]
 			}
 			was := joined[len(joined)-1].Text
-			joined[len(joined)-1] = node.withText(*was + *node.Text)
+			joined[len(joined)-1] = node.WithText(*was + *node.Text)
 		} else if len(joined) > 0 {
 			joined = append(joined, node)
 		}
