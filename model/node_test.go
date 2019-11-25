@@ -196,3 +196,15 @@ func TestNodeToString(t *testing.T) {
 		"<custom_text, custom_hard_break, custom_text>",
 	)
 }
+
+func TestReplace(t *testing.T) {
+	node := doc(p("ab")).Node
+	txt := schema.Text("ô", nil)
+	fragment := NewFragment([]*Node{txt})
+	slice := &Slice{Content: fragment}
+
+	result, err := node.Replace(2, 2, slice)
+	assert.NoError(t, err)
+	expected := doc(p("aôb")).Node
+	assert.True(t, result.Eq(expected))
+}
