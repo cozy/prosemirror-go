@@ -2,7 +2,7 @@ ProseMirror in Go
 =================
 
 [![GoDoc](https://godoc.org/github.com/cozy/prosemirror-go?status.svg)](https://godoc.org/github.com/cozy/prosemirror-go)
-[![Build Status](https://github.com/cozy/prosemirror-go/workflows/CI/badge.svg)](https://github.com/cozy/prosemirror-go/actions)
+[![Build Status](https://circleci.com/gh/cozy/prosemirror-go.svg?style=svg)](https://circleci.com/gh/cozy/prosemirror-go)
 [![Go Report Card](https://goreportcard.com/badge/github.com/cozy/prosemirror-go)](https://goreportcard.com/report/github.com/cozy/prosemirror-go)
 
 ## Introduction
