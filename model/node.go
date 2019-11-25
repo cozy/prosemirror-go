@@ -43,7 +43,7 @@ func NewNode(typ *NodeType, attrs map[string]interface{}, content *Fragment, mar
 // plus two (the start and end token).
 func (n *Node) NodeSize() int {
 	if n.IsText() {
-		return len(*n.Text)
+		return len([]rune(*n.Text))
 	}
 	if n.IsLeaf() {
 		return 1

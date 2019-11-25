@@ -197,14 +197,29 @@ func TestNodeToString(t *testing.T) {
 	)
 }
 
-func TestReplace(t *testing.T) {
-	node := doc(p("ab")).Node
-	txt := schema.Text("ô", nil)
-	fragment := NewFragment([]*Node{txt})
-	slice := &Slice{Content: fragment}
+func TestNodeReplaceText(t *testing.T) {
+	replace := func(from, to int, text string, initial, expected builder.NodeWithTag) {
+		txt := schema.Text(text, nil)
+		fragment := NewFragment([]*Node{txt})
+		slice := &Slice{Content: fragment}
 
-	result, err := node.Replace(2, 2, slice)
-	assert.NoError(t, err)
-	expected := doc(p("aôb")).Node
-	assert.True(t, result.Eq(expected))
+		result, err := initial.Replace(from, to, slice)
+		assert.NoError(t, err)
+		assert.True(t, result.Eq(expected.Node))
+	}
+
+	replace(2, 2, "ô", doc(p("ab")), doc(p("aôb")))
+	replace(1, 1, "ô", doc(p("ôô")), doc(p("ôôô")))
+	replace(2, 2, "ô", doc(p("ôô")), doc(p("ôôô")))
+	replace(3, 3, "ô", doc(p("ôô")), doc(p("ôôô")))
+}
+
+func TestNodeSize(t *testing.T) {
+	nodeSize := func(node *Node, expected int) {
+		assert.Equal(t, node.NodeSize(), expected)
+	}
+
+	nodeSize(schema.Text("a"), 1)
+	nodeSize(schema.Text("hello world"), 11)
+	nodeSize(schema.Text("ô"), 1)
 }

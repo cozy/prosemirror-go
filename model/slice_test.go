@@ -16,7 +16,7 @@ func TestNodeSlice(t *testing.T) {
 		} else {
 			slice = doc.Slice(doc.Tag["a"])
 		}
-		assert.True(t, slice.Content.Eq(expect.Content))
+		assert.True(t, slice.Content.Eq(expect.Content), "%s != %s", slice.Content.String(), expect.Content.String())
 		assert.Equal(t, slice.OpenStart, openStart)
 		assert.Equal(t, slice.OpenEnd, openEnd)
 	}
