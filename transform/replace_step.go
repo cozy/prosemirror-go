@@ -288,7 +288,9 @@ func contentBetween(doc *model.Node, from, to int) bool {
 		dist--
 	}
 	if dist > 0 {
-		next := dfrom.Node(depth).MaybeChild(dfrom.IndexAfter(depth))
+		tmp := dfrom.Node(depth)
+		k := dfrom.IndexAfter(depth)
+		next := tmp.MaybeChild(k)
 		for dist > 0 {
 			if next == nil || next.IsLeaf() {
 				return true

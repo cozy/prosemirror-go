@@ -87,9 +87,9 @@ func (r *ResolvedPos) IndexAfter(depth ...int) int {
 		d = &depth[0]
 	}
 	rd := r.resolveDepth(d)
-	offset := 0
+	offset := 1
 	if rd == r.Depth && r.TextOffset() == 0 {
-		offset = 1
+		offset = 0
 	}
 	return r.Index(rd) + offset
 }
