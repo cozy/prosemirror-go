@@ -223,3 +223,8 @@ func TestNodeSize(t *testing.T) {
 	nodeSize(schema.Text("hello world"), 11)
 	nodeSize(schema.Text("ô"), 1)
 }
+
+func TestNodeTextBetween(t *testing.T) {
+	txt := schema.Text("hâhîhô", nil)
+	assert.Equal(t, "hî", txt.TextBetween(2, 4))
+}

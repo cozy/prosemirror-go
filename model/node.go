@@ -105,7 +105,8 @@ func (n *Node) TextContent() string {
 // encountered.
 func (n *Node) TextBetween(from, to int, args ...string) string {
 	if n.IsText() {
-		return (*n.Text)[from:to]
+		runes := []rune(*n.Text)
+		return string(runes[from:to])
 	}
 	return n.Content.textBetween(from, to, args...)
 }
