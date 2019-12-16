@@ -185,14 +185,15 @@ func (n *Node) Mark(marks []*Mark) *Node {
 // positions. If to is not given, it defaults to the end of the node.
 func (n *Node) Cut(from int, to ...int) *Node {
 	if n.IsText() {
-		t := len(*n.Text)
+		runes := []rune(*n.Text)
+		t := len(runes)
 		if len(to) > 0 {
 			t = to[0]
 		}
-		if from == 0 && t == len(*n.Text) {
+		if from == 0 && t == len(runes) {
 			return n
 		}
-		return n.WithText((*n.Text)[from:t])
+		return n.WithText(string(runes[from:t]))
 	}
 	if len(to) == 0 {
 		return n.Copy(n.Content.Cut(from))
