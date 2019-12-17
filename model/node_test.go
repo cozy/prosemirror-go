@@ -222,6 +222,7 @@ func TestNodeSize(t *testing.T) {
 	nodeSize(schema.Text("a"), 1)
 	nodeSize(schema.Text("hello world"), 11)
 	nodeSize(schema.Text("ô"), 1)
+	nodeSize(schema.Text("👥"), 2)
 }
 
 func TestNodeTextBetween(t *testing.T) {

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"unicode/utf16"
 )
 
 // Node class represents a node in the tree that makes up a ProseMirror
@@ -43,7 +44,7 @@ func NewNode(typ *NodeType, attrs map[string]interface{}, content *Fragment, mar
 // plus two (the start and end token).
 func (n *Node) NodeSize() int {
 	if n.IsText() {
-		return len([]rune(*n.Text))
+		return len(asCodeUnits(*n.Text))
 	}
 	if n.IsLeaf() {
 		return 1
@@ -105,8 +106,8 @@ func (n *Node) TextContent() string {
 // encountered.
 func (n *Node) TextBetween(from, to int, args ...string) string {
 	if n.IsText() {
-		runes := []rune(*n.Text)
-		return string(runes[from:to])
+		units := asCodeUnits(*n.Text)
+		return fromCodeUnits(units[from:to])
 	}
 	return n.Content.textBetween(from, to, args...)
 }
@@ -186,15 +187,15 @@ func (n *Node) Mark(marks []*Mark) *Node {
 // positions. If to is not given, it defaults to the end of the node.
 func (n *Node) Cut(from int, to ...int) *Node {
 	if n.IsText() {
-		runes := []rune(*n.Text)
-		t := len(runes)
+		units := asCodeUnits(*n.Text)
+		t := len(units)
 		if len(to) > 0 {
 			t = to[0]
 		}
-		if from == 0 && t == len(runes) {
+		if from == 0 && t == len(units) {
 			return n
 		}
-		return n.WithText(string(runes[from:t]))
+		return n.WithText(fromCodeUnits(units[from:t]))
 	}
 	if len(to) == 0 {
 		return n.Copy(n.Content.Cut(from))
@@ -451,4 +452,12 @@ func wrapMarks(marks []*Mark, str string) string {
 		str = fmt.Sprintf("%s(%s)", marks[i].Type.Name, str)
 	}
 	return str
+}
+
+func asCodeUnits(text string) []uint16 {
+	return utf16.Encode([]rune(text))
+}
+
+func fromCodeUnits(units []uint16) string {
+	return string(utf16.Decode(units))
 }
