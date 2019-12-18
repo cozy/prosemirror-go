@@ -160,6 +160,10 @@ func TestMarkdown(t *testing.T) {
 	same("Link to <https://prosemirror.net>",
 		doc(p("Link to ", link(map[string]interface{}{"href": "https://prosemirror.net"}, "https://prosemirror.net"))))
 
+	// correctly serializes relative urls
+	same("[foo.html](foo.html)",
+		doc(p(link(map[string]interface{}{"href": "foo.html"}, "foo.html"))))
+
 	// parses emphasized urls
 	same("Link to *<https://prosemirror.net>*",
 		doc(p("Link to ", em(link(map[string]interface{}{"href": "https://prosemirror.net"}, "https://prosemirror.net")))))

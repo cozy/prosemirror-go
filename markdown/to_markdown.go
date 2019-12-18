@@ -220,6 +220,10 @@ func isPlainURL(link *model.Mark, parent *model.Node, index, side int) bool {
 	if _, ok := link.Attrs["title"].(string); ok {
 		return false
 	}
+	href, _ := link.Attrs["href"].(string)
+	if !strings.Contains(href, ":") {
+		return false
+	}
 	x := 0
 	if side < 0 {
 		x = -1
@@ -228,7 +232,7 @@ func isPlainURL(link *model.Mark, parent *model.Node, index, side int) bool {
 	if err != nil {
 		return true
 	}
-	if !content.IsText() || *content.Text != link.Attrs["href"] || content.Marks[len(content.Marks)-1] != link {
+	if !content.IsText() || *content.Text != href || content.Marks[len(content.Marks)-1] != link {
 		return false
 	}
 	if side < 0 && index == 1 {
