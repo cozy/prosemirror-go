@@ -112,6 +112,20 @@ func (n *Node) TextBetween(from, to int, args ...string) string {
 	return n.Content.textBetween(from, to, args...)
 }
 
+// UnitCodeAt returns the UTF-16 unit code at the given position. It is a
+// function that does not exist in the original prosemirror in JS, as it
+// is only useful in Go to emulate the behavior of strings in JavaScript.
+// In Go, the strings are encoded as UTF-8 by default, but in JavaScript,
+// they can be seen as an array of UTF-16 unit codes. In particular, it means
+// that a single unicode character with a value > 0xffff are a surrogate pair
+// of two UTF-16 unit codes in JavaScript.
+func (n *Node) UnitCodeAt(pos int) uint16 {
+	if n.IsText() {
+		return asCodeUnits(*n.Text)[pos]
+	}
+	return 0
+}
+
 // FirstChild returns this node's first child, or null if there are no
 // children.
 func (n *Node) FirstChild() *Node {

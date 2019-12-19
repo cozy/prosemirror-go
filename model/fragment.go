@@ -85,10 +85,11 @@ func (f *Fragment) textBetween(from, to int, args ...string) string {
 			}
 			start := max - pos
 			stop := to - pos
-			if stop > len(*node.Text) {
-				stop = len(*node.Text)
+			size := node.NodeSize()
+			if stop > size {
+				stop = size
 			}
-			text += (*node.Text)[start:stop]
+			text += node.TextBetween(start, stop)
 			separated = blockSeparator != ""
 		} else if node.IsLeaf() && leafText != "" {
 			text += leafText
@@ -149,7 +150,7 @@ func (f *Fragment) Cut(from int, to ...int) *Fragment {
 						if x := from - pos; x >= 0 {
 							start = x
 						}
-						stop = len(*child.Text)
+						stop = child.NodeSize()
 						if x := t - pos; x < stop {
 							stop = x
 						}
