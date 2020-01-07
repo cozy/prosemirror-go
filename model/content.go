@@ -136,7 +136,7 @@ func (cm *ContentMatch) FillBefore(after *Fragment, toEnd ...bool) *Fragment {
 		for i := 0; i < len(match.next); i += 2 {
 			typ := match.next[i].(*NodeType)
 			next := match.next[i+1].(*ContentMatch)
-			if !(typ.IsText() || typ.hasRequiredAttrs()) && indexOf(seen, next) == -1 {
+			if !(typ.IsText() || typ.HasRequiredAttrs()) && indexOf(seen, next) == -1 {
 				seen = append(seen, next)
 				concat := make([]*NodeType, len(types), len(types)+1)
 				copy(concat, types)
@@ -595,7 +595,7 @@ func checkForDeadEnds(match *ContentMatch, stream *tokenStream) error {
 			node := state.next[j].(*NodeType)
 			next := state.next[j+1].(*ContentMatch)
 			nodes = append(nodes, node)
-			if dead && !(node.IsText() || node.hasRequiredAttrs()) {
+			if dead && !(node.IsText() || node.HasRequiredAttrs()) {
 				dead = false
 			}
 			if indexOf(work, next) == -1 {

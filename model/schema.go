@@ -107,7 +107,9 @@ func (nt *NodeType) IsLeaf() bool {
 	return nt.ContentMatch == EmptyContentMatch
 }
 
-func (nt *NodeType) hasRequiredAttrs() bool {
+// HasRequiredAttrs tells you whether this node type has any required
+// attributes.
+func (nt *NodeType) HasRequiredAttrs() bool {
 	for _, attr := range nt.Attrs {
 		if attr.isRequired() {
 			return true
