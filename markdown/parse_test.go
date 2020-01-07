@@ -46,6 +46,7 @@ var (
 		"hr":  {"nodeType": "horizontal_rule"},
 		"li":  {"nodeType": "list_item"},
 		"ol":  {"nodeType": "ordered_list"},
+		"ol3": {"nodeType": "ordered_list", "order": 3},
 		"ul":  {"nodeType": "bullet_list"},
 		"pre": {"nodeType": "code_block"},
 		"a":   {"markType": "link", "href": "foo"},
@@ -61,6 +62,7 @@ var (
 	hr         = out["hr"].(builder.NodeBuilder)
 	li         = out["li"].(builder.NodeBuilder)
 	ol         = out["ol"].(builder.NodeBuilder)
+	ol3        = out["ol3"].(builder.NodeBuilder)
 	ul         = out["ul"].(builder.NodeBuilder)
 	pre        = out["pre"].(builder.NodeBuilder)
 	a          = out["a"].(builder.MarkBuilder)
@@ -111,6 +113,10 @@ func TestMarkdown(t *testing.T) {
 	// parses an ordered list
 	same("1. Hello\n\n2. Goodbye\n\n3. Nest\n\n   1. Hey\n\n   2. Aye",
 		doc(ol(li(p("Hello")), li(p("Goodbye")), li(p("Nest"), ol(li(p("Hey")), li(p("Aye")))))))
+
+	// preserves ordered list start number
+	same("3. Foo\n\n4. Bar",
+		doc(ol3(li(p("Foo")), li(p("Bar")))))
 
 	// parses a code block
 	node, err := schema.Node("code_block", map[string]interface{}{"params": ""}, []interface{}{schema.Text("Here it is")})

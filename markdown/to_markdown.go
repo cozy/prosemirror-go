@@ -113,7 +113,7 @@ var DefaultSerializer = NewSerializer(map[string]NodeSerializerFunc{
 	},
 	"ordered_list": func(state *SerializerState, node, _parent *model.Node, _index int) {
 		start := 1
-		if s, ok := node.Attrs["start"].(int); ok {
+		if s, ok := node.Attrs["order"].(int); ok {
 			start = s
 		}
 		maxW := len(fmt.Sprintf("%d", start+node.ChildCount()-1))
