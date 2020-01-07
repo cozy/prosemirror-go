@@ -77,6 +77,19 @@ func (s *Serializer) Serialize(content *model.Node, options ...map[string]interf
 	return state.Out
 }
 
+func getAttrInt(attrs map[string]interface{}, name string, defaultValue int) int {
+	value := defaultValue
+	switch v := attrs[name].(type) {
+	case int:
+		value = v
+	case float64:
+		value = int(v)
+	case int64:
+		value = int(v)
+	}
+	return value
+}
+
 // DefaultSerializer is a serializer for the [basic schema](#schema).
 var DefaultSerializer = NewSerializer(map[string]NodeSerializerFunc{
 	"blockquote": func(state *SerializerState, node, _parent *model.Node, _index int) {
@@ -91,7 +104,7 @@ var DefaultSerializer = NewSerializer(map[string]NodeSerializerFunc{
 		state.CloseBlock(node)
 	},
 	"heading": func(state *SerializerState, node, _parent *model.Node, _index int) {
-		level, _ := node.Attrs["level"].(int)
+		level := getAttrInt(node.Attrs, "level", 1)
 		state.Write(strings.Repeat("#", level) + " ")
 		state.RenderInline(node)
 		state.CloseBlock(node)
@@ -112,10 +125,7 @@ var DefaultSerializer = NewSerializer(map[string]NodeSerializerFunc{
 		state.RenderList(node, "  ", func(_ int) string { return bullet + " " })
 	},
 	"ordered_list": func(state *SerializerState, node, _parent *model.Node, _index int) {
-		start := 1
-		if s, ok := node.Attrs["order"].(int); ok {
-			start = s
-		}
+		start := getAttrInt(node.Attrs, "order", 1)
 		maxW := len(fmt.Sprintf("%d", start+node.ChildCount()-1))
 		space := strings.Repeat(" ", maxW+2)
 		state.RenderList(node, space, func(i int) string {
