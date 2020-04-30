@@ -279,7 +279,7 @@ var _ Step = &ReplaceAroundStep{}
 func contentBetween(doc *model.Node, from, to int) bool {
 	dfrom, err := doc.Resolve(from)
 	if err != nil {
-		panic(err)
+		return true
 	}
 	dist := to - from
 	depth := dfrom.Depth
