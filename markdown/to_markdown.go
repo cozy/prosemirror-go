@@ -593,11 +593,11 @@ func (s *SerializerState) RenderList(node *model.Node, delim string, firstDelim 
 var (
 	escRegexp1 = regexp.MustCompile("[`*\\\\~\\[\\]]")
 	escRegexp2 = regexp.MustCompile(`^[:#\-*+]`)
-	escRegexp3 = regexp.MustCompile(`(\d+)\.`)
+	escRegexp3 = regexp.MustCompile(`(\s*\d+)\.`)
 )
 
 // Esc escapes the given string so that it can safely appear in Markdown
-// content. If `startOfLine` is true, also escape characters that has special
+// content. If `startOfLine` is true, also escape characters that have special
 // meaning only at the start of the line.
 func (s *SerializerState) Esc(str string, startOfLine ...bool) string {
 	start := false
