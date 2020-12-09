@@ -48,7 +48,10 @@ func NewAddMarkStep(from, to int, mark *model.Mark) *AddMarkStep {
 
 // Apply is a method of the Step interface.
 func (s *AddMarkStep) Apply(doc *model.Node) StepResult {
-	oldSlice := doc.Slice(s.From, s.To)
+	oldSlice, err := doc.Slice(s.From, s.To)
+	if err != nil {
+		return Fail(err.Error())
+	}
 	dFrom, err := doc.Resolve(s.From)
 	if err != nil {
 		return Fail(err.Error())
@@ -156,7 +159,10 @@ func NewRemoveMarkStep(from, to int, mark *model.Mark) *RemoveMarkStep {
 
 // Apply is a method of the Step interface.
 func (s *RemoveMarkStep) Apply(doc *model.Node) StepResult {
-	oldSlice := doc.Slice(s.From, s.To)
+	oldSlice, err := doc.Slice(s.From, s.To)
+	if err != nil {
+		return Fail(err.Error())
+	}
 	fragment, err := mapFragment(oldSlice.Content, func(node, parent *model.Node) *model.Node {
 		return node.Mark(s.Mark.RemoveFromSet(node.Marks))
 	}, nil)

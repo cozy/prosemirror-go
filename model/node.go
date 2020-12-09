@@ -223,7 +223,7 @@ func (n *Node) Cut(from int, to ...int) *Node {
 
 // Slice cuts out the part of the document between the given positions, and
 // return it as a Slice object.
-func (n *Node) Slice(from int, args ...interface{}) *Slice {
+func (n *Node) Slice(from int, args ...interface{}) (*Slice, error) {
 	to := n.Content.Size
 	if len(args) > 0 {
 		if t, ok := args[0].(int); ok {
@@ -236,16 +236,16 @@ func (n *Node) Slice(from int, args ...interface{}) *Slice {
 	}
 
 	if from == to {
-		return EmptySlice
+		return EmptySlice, nil
 	}
 
 	resFrom, err := n.Resolve(from)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	resTo, err := n.Resolve(to)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	depth := 0
 	if !includeParents {
@@ -254,7 +254,7 @@ func (n *Node) Slice(from int, args ...interface{}) *Slice {
 	start := resFrom.Start(depth)
 	node := resFrom.Node(depth)
 	content := node.Content.Cut(resFrom.Pos-start, resTo.Pos-start)
-	return NewSlice(content, resFrom.Depth-depth, resTo.Depth-depth)
+	return NewSlice(content, resFrom.Depth-depth, resTo.Depth-depth), nil
 }
 
 // Replace the part of the document between the given positions with the given

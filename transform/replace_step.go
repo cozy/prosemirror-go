@@ -45,7 +45,11 @@ func (s *ReplaceStep) GetMap() *StepMap {
 
 // Invert is a method of the Step interface.
 func (s *ReplaceStep) Invert(doc *model.Node) Step {
-	return NewReplaceStep(s.From, s.From+s.Slice.Size(), doc.Slice(s.From, s.To))
+	slice, err := doc.Slice(s.From, s.To)
+	if err != nil {
+		panic(err)
+	}
+	return NewReplaceStep(s.From, s.From+s.Slice.Size(), slice)
 }
 
 // Map is a method of the Step interface.
@@ -157,7 +161,10 @@ func (s *ReplaceAroundStep) Apply(doc *model.Node) StepResult {
 		return Fail("Structure gap-replace would overwrite content")
 	}
 
-	gap := doc.Slice(s.GapFrom, s.GapTo)
+	gap, err := doc.Slice(s.GapFrom, s.GapTo)
+	if err != nil {
+		return Fail(err.Error())
+	}
 	if gap.OpenStart != 0 && gap.OpenEnd != 0 {
 		return Fail("Gap is not a flat range")
 	}
@@ -177,7 +184,11 @@ func (s *ReplaceAroundStep) GetMap() *StepMap {
 // Invert is a method of the Step interface.
 func (s *ReplaceAroundStep) Invert(doc *model.Node) Step {
 	gap := s.GapTo - s.GapFrom
-	removed, err := doc.Slice(s.From, s.To).RemoveBetween(s.GapFrom-s.From, s.GapTo-s.To)
+	slice, err := doc.Slice(s.From, s.To)
+	if err != nil {
+		return nil
+	}
+	removed, err := slice.RemoveBetween(s.GapFrom-s.From, s.GapTo-s.To)
 	if err != nil {
 		return nil
 	}

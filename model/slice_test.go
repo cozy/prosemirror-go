@@ -11,11 +11,13 @@ import (
 func TestNodeSlice(t *testing.T) {
 	test := func(doc, expect builder.NodeWithTag, openStart, openEnd int) {
 		var slice *Slice
+		var err error
 		if b, ok := doc.Tag["b"]; ok {
-			slice = doc.Slice(doc.Tag["a"], b)
+			slice, err = doc.Slice(doc.Tag["a"], b)
 		} else {
-			slice = doc.Slice(doc.Tag["a"])
+			slice, err = doc.Slice(doc.Tag["a"])
 		}
+		assert.NoError(t, err)
 		assert.True(t, slice.Content.Eq(expect.Content), "%s != %s", slice.Content.String(), expect.Content.String())
 		assert.Equal(t, slice.OpenStart, openStart)
 		assert.Equal(t, slice.OpenEnd, openEnd)
@@ -87,6 +89,7 @@ func TestNodeSlice(t *testing.T) {
 
 	// can include parents
 	d := doc(blockquote(p("fo<a>o"), p("bar<b>")))
-	slice := d.Slice(d.Tag["a"], d.Tag["b"], true)
+	slice, err := d.Slice(d.Tag["a"], d.Tag["b"], true)
+	assert.NoError(t, err)
 	assert.Equal(t, slice.String(), `<blockquote(paragraph("o"), paragraph("bar"))>(2,2)`)
 }

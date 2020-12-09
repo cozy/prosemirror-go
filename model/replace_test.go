@@ -13,7 +13,9 @@ func TestNodeReplace(t *testing.T) {
 		expected := expect.Node
 		slice := EmptySlice
 		if insert.Node != nil {
-			slice = insert.Slice(insert.Tag["a"], insert.Tag["b"])
+			var err error
+			slice, err = insert.Slice(insert.Tag["a"], insert.Tag["b"])
+			assert.NoError(t, err)
 		}
 		actual, err := doc.Replace(doc.Tag["a"], doc.Tag["b"], slice)
 		if assert.NoError(t, err) {
@@ -100,7 +102,9 @@ func TestNodeReplace(t *testing.T) {
 	bad := func(doc, insert builder.NodeWithTag, pattern string) {
 		slice := EmptySlice
 		if insert.Node != nil {
-			slice = insert.Slice(insert.Tag["a"], insert.Tag["b"])
+			var err error
+			slice, err = insert.Slice(insert.Tag["a"], insert.Tag["b"])
+			assert.NoError(t, err)
 		}
 		_, err := doc.Replace(doc.Tag["a"], doc.Tag["b"], slice)
 		if assert.Error(t, err) {
