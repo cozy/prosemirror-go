@@ -110,10 +110,10 @@ func (s *AddMarkStep) Merge(other Step) (Step, bool) {
 // ToJSON is a method of the Step interface.
 func (s *AddMarkStep) ToJSON() map[string]interface{} {
 	return map[string]interface{}{
-		"type": "addMark",
-		"mark": s.Mark.ToJSON(),
-		"from": s.From,
-		"to":   s.To,
+		"stepType": "addMark",
+		"mark":     s.Mark.ToJSON(),
+		"from":     s.From,
+		"to":       s.To,
 	}
 }
 
@@ -213,10 +213,10 @@ func (s *RemoveMarkStep) Merge(other Step) (Step, bool) {
 // ToJSON is a method of the Step interface.
 func (s *RemoveMarkStep) ToJSON() map[string]interface{} {
 	return map[string]interface{}{
-		"type": "removeMark",
-		"mark": s.Mark.ToJSON(),
-		"from": s.From,
-		"to":   s.To,
+		"stepType": "removeMark",
+		"mark":     s.Mark.ToJSON(),
+		"from":     s.From,
+		"to":       s.To,
 	}
 }
 
