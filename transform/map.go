@@ -99,9 +99,9 @@ func (sm *StepMap) _map(pos, assoc int, simple bool) interface{} {
 			if oldSize == 0 {
 				side = assoc
 			} else if pos == start {
-				side = 1
-			} else if pos == end {
 				side = -1
+			} else if pos == end {
+				side = 1
 			} else {
 				side = assoc
 			}
