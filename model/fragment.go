@@ -90,10 +90,10 @@ func (f *Fragment) textBetween(from, to int, args ...string) string {
 				stop = size
 			}
 			text += node.TextBetween(start, stop)
-			separated = blockSeparator != ""
+			separated = blockSeparator == ""
 		} else if node.IsLeaf() && leafText != "" {
 			text += leafText
-			separated = blockSeparator != ""
+			separated = blockSeparator == ""
 		} else if !separated && node.IsBlock() {
 			text += blockSeparator
 			separated = true
