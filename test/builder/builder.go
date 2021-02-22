@@ -188,6 +188,8 @@ func takeAttrs(attrs map[string]interface{}, args []interface{}) (map[string]int
 func block(typ *model.NodeType, attrs map[string]interface{}) NodeBuilder {
 	return func(args ...interface{}) NodeWithTag {
 		myAttrs, myArgs := takeAttrs(attrs, args)
+		//fmt.Println(myAttrs)
+		//fmt.Println(myArgs)
 		result := flatten(typ.Schema, myArgs, id)
 		node, err := typ.Create(myAttrs, result.Nodes, nil)
 		if err != nil {

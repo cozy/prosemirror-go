@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"golang.org/x/net/html"
 )
 
 // For node types where all attrs have a default value (or which don't have any
@@ -609,6 +611,9 @@ type NodeSpec struct {
 	// Defines the default way a node of this type should be serialized to a
 	// string representation for debugging (e.g. in error messages).
 	ToDebugString func(*Node) string `json:"-"`
+
+	// Defines how the node is rendered in HTML
+	ToDOM func(*Node) *html.Node `json:"-"`
 }
 
 // MarkSpec is an object describing a mark type.
@@ -642,6 +647,10 @@ type MarkSpec struct {
 
 	// The group or space-separated groups to which this mark belongs.
 	Group string `json:"group,omitempty"`
+
+	// Determines whether marks of this type can span multiple adjacent
+	// nodes when serialized to DOM/HTML.
+	Spanning *bool `json:"spanning,omitempty"`
 }
 
 // AttributeSpec is used to define attributes on nodes or marks.
