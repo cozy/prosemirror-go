@@ -1,4 +1,4 @@
-module github.com/shodgson/prosemirror-go v1.0.0
+module github.com/cozy/prosemirror-go
 
 go 1.13
 
@@ -11,4 +11,4 @@ require (
 	gopkg.in/yaml.v2 v2.2.4 // indirect
 )
 
-replace github.com/cozy/prosemirror-go => github.com/shodgson/prosemirror-go v1.0.0
+replace github.com/cozy/prosemirror-go => github.com/shodgson/prosemirror-go v0.0.1

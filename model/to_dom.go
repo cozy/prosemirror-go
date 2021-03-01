@@ -212,16 +212,12 @@ func (d *DOMSerializer) SerializeFragment(fragment *Fragment, options interface{
 	}
 	var active []activeMark
 	top := target
-	//for _, node := range fragment.Content {
 	fragment.ForEach(func(node *Node, offset, index int) {
 
 		fmt.Printf("  Node name: %s\n", node.Type.Name)
 		for key, val := range node.Attrs {
 			fmt.Printf("  Node attributes: %s:%s\n", key, val)
 		}
-		//fmt.Printf("  Number of marks: %d\n", len(node.Marks))
-		//fmt.Printf("  Number of children in content: %d\n", node.Content.ChildCount())
-		//fmt.Printf("  Node: %v\n", node)
 		if active != nil || len(node.Marks) > 0 {
 			keep, rendered := 0, 0
 			for keep < len(active) && rendered < len(node.Marks) {
@@ -279,27 +275,7 @@ func (d *DOMSerializer) serializeNode(node *Node) *html.Node {
 		for contentNode.FirstChild != nil {
 			contentNode = contentNode.FirstChild
 		}
-		/*
-			for _, m := range node.Marks {
-				markHtmlNode := d.Marks[m.Type.Name](m)
-				tempNode := *topNode
-				topNode = markHtmlNode
-				topNode.AppendChild(&tempNode)
-			}
-		*/
-		//for i := 0; i < node.ChildCount(); i++ {
-		//child, _ := node.Child(i)
-		//fmt.Printf("  Child is leaf = %t\n", child.IsLeaf())
-		//if child.IsLeaf() {
-		//childHTML := d.serializeNode(child)
-		//contentNode.AppendChild(childHTML)
-		//} else {
 		d.SerializeFragment(node.Content, nil, contentNode)
-		//}
-		//if childHTML != nil {
-		//fmt.Println(childHTML)
-		//contentNode.AppendChild(childHTML)
-		//}
 		return topNode
 	}
 	return nil
