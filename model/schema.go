@@ -7,8 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"golang.org/x/net/html"
 )
 
 // For node types where all attrs have a default value (or which don't have any
@@ -613,7 +611,7 @@ type NodeSpec struct {
 	ToDebugString func(*Node) string `json:"-"`
 
 	// Defines how the node is rendered in HTML
-	ToDOM func(*Node) *html.Node `json:"-"`
+	ToDOM ToDOM `json:"-"`
 }
 
 // MarkSpec is an object describing a mark type.
@@ -651,6 +649,9 @@ type MarkSpec struct {
 	// Determines whether marks of this type can span multiple adjacent
 	// nodes when serialized to DOM/HTML.
 	Spanning *bool `json:"spanning,omitempty"`
+
+	// Defines how the mark is rendered in HTML
+	ToDOM ToDOM `json:"-"`
 }
 
 // AttributeSpec is used to define attributes on nodes or marks.
