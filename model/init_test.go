@@ -16,6 +16,7 @@ var (
 	strong     = builder.Strong
 	ul         = builder.Ul
 	li         = builder.Li
+	ol         = builder.Ol
 	img        = builder.Img
 	br         = builder.Br
 	code       = builder.Code
