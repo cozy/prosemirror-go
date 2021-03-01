@@ -1,4 +1,4 @@
-module github.com/cozy/prosemirror-go
+module github.com/shodgson/prosemirror-go
 
 go 1.13
 
