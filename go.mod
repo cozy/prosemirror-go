@@ -1,8 +1,9 @@
-module github.com/cozy/prosemirror-go
+module github.com/shodgson/prosemirror-go
 
 go 1.13
 
 require (
+	github.com/cozy/prosemirror-go v0.0.0-00010101000000-000000000000
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/stretchr/testify v1.4.0
