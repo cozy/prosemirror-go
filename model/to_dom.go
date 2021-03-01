@@ -248,7 +248,7 @@ func (d *DOMSerializer) SerializeFragment(fragment *Fragment, options interface{
 			}
 
 		}
-		child := d.serializeNode(node)
+		child := d.SerializeNode(node)
 		if child != nil {
 			top.AppendChild(child)
 		}
@@ -266,7 +266,7 @@ func (d *DOMSerializer) serializeMark(mark *Mark, inline bool) *html.Node {
 // Serialize this node to a DOM node. This can be useful when you
 // need to serialize a part of a document, as opposed to the whole
 // document. To serialize a whole document, use serializeFragment()
-func (d *DOMSerializer) serializeNode(node *Node) *html.Node {
+func (d *DOMSerializer) SerializeNode(node *Node) *html.Node {
 	domFn := d.Nodes[node.Type.Name]
 	if domFn != nil {
 		fmt.Printf("  Type of node: %s\n", node.Type.Name)
