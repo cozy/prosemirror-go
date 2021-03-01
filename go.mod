@@ -1,4 +1,4 @@
-module github.com/shodgson/prosemirror-go
+module github.com/shodgson/prosemirror-go v1.0.0
 
 go 1.13
 
