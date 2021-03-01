@@ -3,7 +3,7 @@
 // list item is a plain paragraph.
 package list
 
-import "github.com/cozy/prosemirror-go/model"
+import "github.com/shodgson/prosemirror-go/model"
 
 var (
 	// An ordered list node spec. Has a single attribute, order, which

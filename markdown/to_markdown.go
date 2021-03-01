@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/cozy/prosemirror-go/model"
+	"github.com/shodgson/prosemirror-go/model"
 )
 
 // NodeSerializerFunc is the function to serialize a node.

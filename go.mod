@@ -3,7 +3,6 @@ module github.com/shodgson/prosemirror-go
 go 1.13
 
 require (
-	github.com/cozy/prosemirror-go v0.0.0-00010101000000-000000000000
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/stretchr/testify v1.4.0
@@ -12,4 +11,4 @@ require (
 	gopkg.in/yaml.v2 v2.2.4 // indirect
 )
 
-replace github.com/cozy/prosemirror-go => github.com/shodgson/prosemirror-go v0.0.1
+// replace github.com/shodgson/prosemirror-go => github.com/shodgson/prosemirror-go v0.0.1

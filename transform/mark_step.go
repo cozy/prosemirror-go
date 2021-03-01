@@ -3,7 +3,7 @@ package transform
 import (
 	"errors"
 
-	"github.com/cozy/prosemirror-go/model"
+	"github.com/shodgson/prosemirror-go/model"
 )
 
 type mapFn func(node, parent *model.Node) *model.Node

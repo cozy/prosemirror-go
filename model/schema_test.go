@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	. "github.com/cozy/prosemirror-go/model"
+	. "github.com/shodgson/prosemirror-go/model"
 	"github.com/stretchr/testify/assert"
 )
 

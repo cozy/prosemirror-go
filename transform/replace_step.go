@@ -3,7 +3,7 @@ package transform
 import (
 	"errors"
 
-	"github.com/cozy/prosemirror-go/model"
+	"github.com/shodgson/prosemirror-go/model"
 )
 
 // ReplaceStep replaces a part of the document with a slice of new content.
