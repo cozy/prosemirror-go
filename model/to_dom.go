@@ -12,10 +12,10 @@ import (
 type ToDOM = func(NodeOrMark) *html.Node
 
 type NodeOrMark interface {
-	getAttrs([]string) []html.Attribute
+	GetAttrs([]string) []html.Attribute
 }
 
-func (n *Node) getAttrs(attrs []string) []html.Attribute {
+func (n *Node) GetAttrs(attrs []string) []html.Attribute {
 	result := []html.Attribute{}
 	for key, value := range n.Attrs {
 		result = addAttr(key, value, result)
@@ -23,7 +23,7 @@ func (n *Node) getAttrs(attrs []string) []html.Attribute {
 	return result
 }
 
-func (m *Mark) getAttrs(selectedAttrs []string) []html.Attribute {
+func (m *Mark) GetAttrs(selectedAttrs []string) []html.Attribute {
 	result := []html.Attribute{}
 	for key, value := range m.Attrs {
 		for _, a := range selectedAttrs {
@@ -54,7 +54,7 @@ func addAttr(key string, value interface{}, attrs []html.Attribute) []html.Attri
 
 func defaultDOMGenerator(atom atom.Atom, attrs []string) ToDOM {
 	return func(n NodeOrMark) *html.Node {
-		htmlAttrs := n.getAttrs(attrs)
+		htmlAttrs := n.GetAttrs(attrs)
 		return &html.Node{
 			Type:     html.ElementNode,
 			DataAtom: atom,
@@ -86,7 +86,7 @@ func defaultCodeBlockDOMGenerator() ToDOM {
 func defaultHeadingDOMGenerator() ToDOM {
 	return func(n NodeOrMark) *html.Node {
 		var dataAtom atom.Atom
-		attrs := n.getAttrs([]string{"level"})
+		attrs := n.GetAttrs([]string{"level"})
 		level := "1"
 		for _, a := range attrs {
 			if a.Key == "level" {
