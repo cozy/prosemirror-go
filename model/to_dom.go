@@ -272,8 +272,8 @@ func (d *DOMSerializer) SerializeNode(node *Node) *html.Node {
 		fmt.Printf("  Type of node: %s\n", node.Type.Name)
 		topNode := domFn(node)
 		contentNode := topNode
-		for contentNode.FirstChild != nil {
-			contentNode = contentNode.FirstChild
+		for contentNode.LastChild != nil {
+			contentNode = contentNode.LastChild
 		}
 		d.SerializeFragment(node.Content, nil, contentNode)
 		return topNode
