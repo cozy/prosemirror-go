@@ -43,11 +43,12 @@ func addAttr(key string, value interface{}, attrs []html.Attribute) []html.Attri
 	if attrInt, ok := value.(int); ok {
 		newAttr.Val = strconv.Itoa(attrInt)
 		return append(attrs, newAttr)
-	} else {
-		if attrString, ok := value.(string); ok {
-			newAttr.Val = attrString
-			return append(attrs, newAttr)
-		}
+	} else if attrString, ok := value.(string); ok {
+		newAttr.Val = attrString
+		return append(attrs, newAttr)
+	} else if attrBool, ok := value.(bool); ok {
+		newAttr.Val = strconv.FormatBool(attrBool)
+		return append(attrs, newAttr)
 	}
 	return attrs
 }
