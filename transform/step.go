@@ -56,6 +56,7 @@ var stepsByID = map[string]stepBuilder{
 	"removeMark":    RemoveMarkStepFromJSON,
 	"replace":       ReplaceStepFromJSON,
 	"replaceAround": ReplaceAroundStepFromJSON,
+	"setAttrs":      SetAttrsStepFromJSON,
 }
 
 // StepFromJSON deserializes a step from its JSON representation. Will call
