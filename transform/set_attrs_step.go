@@ -41,7 +41,7 @@ func (s *SetAttrsStep) Apply(doc *model.Node) StepResult {
 		return Fail(err.Error())
 	}
 	leaf := 0
-	if target.IsLeaf() {
+	if !target.IsLeaf() {
 		leaf = 1
 	}
 	fragment, err := model.FragmentFrom(newNode)
