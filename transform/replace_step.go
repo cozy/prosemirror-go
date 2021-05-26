@@ -133,6 +133,12 @@ func ReplaceStepFromJSON(schema *model.Schema, obj map[string]interface{}) (Step
 	return NewReplaceStep(from, to, slice, structure), nil
 }
 
+// TableSortStepFromJSON builds a step that does nothing. It is used by atlaskit.
+// Cf https://bitbucket.org/atlassian/atlaskit-mk-2/src/master/packages/editor/editor-core/src/plugins/table/utils/sort-step.ts
+func TableSortStepFromJSON(schema *model.Schema, obj map[string]interface{}) (Step, error) {
+	return NewReplaceStep(0, 0, model.EmptySlice), nil
+}
+
 var _ Step = &ReplaceStep{}
 
 // ReplaceAroundStep replaces a part of the document with a slice of content,

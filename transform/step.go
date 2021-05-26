@@ -52,11 +52,12 @@ type Step interface {
 type stepBuilder func(*model.Schema, map[string]interface{}) (Step, error)
 
 var stepsByID = map[string]stepBuilder{
-	"addMark":       AddMarkStepFromJSON,
-	"removeMark":    RemoveMarkStepFromJSON,
-	"replace":       ReplaceStepFromJSON,
-	"replaceAround": ReplaceAroundStepFromJSON,
-	"setAttrs":      SetAttrsStepFromJSON,
+	"addMark":                         AddMarkStepFromJSON,
+	"removeMark":                      RemoveMarkStepFromJSON,
+	"replace":                         ReplaceStepFromJSON,
+	"replaceAround":                   ReplaceAroundStepFromJSON,
+	"setAttrs":                        SetAttrsStepFromJSON,
+	"atlaskit-table-sorting-ordering": TableSortStepFromJSON,
 }
 
 // StepFromJSON deserializes a step from its JSON representation. Will call
