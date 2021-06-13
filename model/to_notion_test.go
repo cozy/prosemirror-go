@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/dstotijn/go-notion"
 	. "github.com/shodgson/prosemirror-go/model"
 	"github.com/shodgson/prosemirror-go/test/builder"
 	"github.com/stretchr/testify/assert"
@@ -11,10 +12,13 @@ import (
 
 func notionTest(t *testing.T, doc builder.NodeWithTag, notionJSON string, serializer *NotionSerializer, msg string) {
 	fmt.Println("Testing: " + msg)
-	output := serializer.SerializeFragment(doc.Content, nil, nil)
-	result, err := output.MarshalJSON()
+	output := serializer.SerializePage(doc.Content)
+	pageParams := &notion.CreatePageParams{
+		Children: output,
+	}
+	result, err := pageParams.MarshalJSON()
 	assert.Nil(t, err)
-	assert.Contains(t, notionJSON, string(result), msg)
+	assert.Equal(t, notionJSON, string(result), msg)
 }
 
 /*var customToDOM = func(n NodeOrMark) *html.Node {
@@ -31,6 +35,11 @@ func notionTest(t *testing.T, doc builder.NodeWithTag, notionJSON string, serial
 }
 */
 
+func newPage(children string) string {
+	return fmt.Sprintf(`{"parent":{},"properties":null,"children":[%s]}`, children)
+
+}
+
 func TestNotionParser(t *testing.T) {
 
 	schema := AddDefaultToNotion(builder.Schema)
@@ -38,49 +47,51 @@ func TestNotionParser(t *testing.T) {
 
 	notionTest(t,
 		doc(p("hello")),
-		`[{"object": "block", "type": "paragraph", "text": "hello"}]`,
+		newPage(`{"object":"block","type":"paragraph","paragraph":{"text":[{"type":"text","plain_text":"hello","text":{"content":"hello"}}]}}`),
 		serializer,
 		"Should represent simple node")
+
+	notionTest(t,
+		doc(p("hi", br, "there")),
+		//newPage(`{"object":"block","type":"paragraph","paragraph":{"text":[{"type":"text","plain_text":"hi/nthere","text":{"content":"hi/nthere"}}]}}`),
+		newPage(`{"object":"block","type":"paragraph","paragraph":{"text":[{"type":"text","plain_text":"hi","text":{"content":"hi"}},{"type":"text","plain_text":"/n","text":{"content":"/n"}},{"type":"text","plain_text":"there","text":{"content":"there"}}]}}`),
+		serializer,
+		"Should represent a line break")
+
+	//test(t,
+	//	doc(p("hi", imageWithAttrs("x", "img.png"), "there")),
+	//	[]string{`<p>hi<img src="img.png" alt="x"/>there</p>`, `<p>hi<img alt="x" src="img.png"/>there</p>`},
+	//	serializer,
+	//	"Should represent an image")
+
+	notionTest(t,
+		doc(p(em("emphasis"))),
+		newPage(`{"object":"block","type":"paragraph","paragraph":{"text":[{"type":"text","annotations":{"bold":true},"plain_text":"emphasis","text":{"content":"emphasis"}}]}}`),
+		serializer,
+		"Should represent simple marks")
+
+	//Currently failing. Outcome is still valid, but the styles are not joined
+	//notionTest(t,
+	//doc(p("one", strong("two", em("three")), em("four"), "five")),
+	// TODO: newPage(`{"object":"block","type":"paragraph","paragraph":{"text":[{"type":"text","plain_text":"one","text":{"content":"one"}}]}}`),
+	//serializer,
+	//"Should join styles")
+
+	// Currently failing. Nested links not supported in current builder
+	//test(t,
+	//doc(p("a ", link("foo", "big ", link("bar", "nested"), " link"))),
+	//"<p>a <a href=\"foo\">big </a><a href=\"bar\">nested</a><a href=\"foo\"> link</a></p>",
+	//serializer,
+	//"Can represent links")
+	//TODO: test links
+
+	notionTest(t,
+		doc(ul(li(p("one")), li(p("two")), li(p("three", strong("!")))), p("after")),
+		"<ul><li><p>one</p></li><li><p>two</p></li><li><p>three<strong>!</strong></p></li></ul><p>after</p>",
+		serializer,
+		"Should represent an unordered list")
+
 	/*
-		test(t,
-			doc(p("hi", br, "there")),
-			"<p>hi<br/>there</p>",
-			serializer,
-			"Should represent a line break")
-
-		test(t,
-			doc(p("hi", imageWithAttrs("x", "img.png"), "there")),
-			[]string{`<p>hi<img src="img.png" alt="x"/>there</p>`, `<p>hi<img alt="x" src="img.png"/>there</p>`},
-			serializer,
-			"Should represent an image")
-
-		test(t,
-			doc(p(em("emphasis"))),
-			"<p><em>emphasis</em></p>",
-			serializer,
-			"Should represent simple marks")
-
-		// Currently failing. Outcome is still valid, but the styles are not joined
-			//test(t,
-			//doc(p("one", strong("two", em("three")), em("four"), "five")),
-			//"<p>one<strong>two</strong><em><strong>three</strong>four</em>five</p>",
-			//serializer,
-			//"Should join styles")
-
-		// Currently failing. Nested links not supported in current builder
-			//test(t,
-				//doc(p("a ", link("foo", "big ", link("bar", "nested"), " link"))),
-				//"<p>a <a href=\"foo\">big </a><a href=\"bar\">nested</a><a href=\"foo\"> link</a></p>",
-				//serializer,
-				//"Can represent links")
-		//TODO: test links
-
-		test(t,
-			doc(ul(li(p("one")), li(p("two")), li(p("three", strong("!")))), p("after")),
-			"<ul><li><p>one</p></li><li><p>two</p></li><li><p>three<strong>!</strong></p></li></ul><p>after</p>",
-			serializer,
-			"Should represent an unordered list")
-
 		test(t,
 			doc(ol(li(p("one")), li(p("two")), li(p("three", strong("!")))), p("after")),
 			"<ol><li><p>one</p></li><li><p>two</p></li><li><p>three<strong>!</strong></p></li></ol><p>after</p>",

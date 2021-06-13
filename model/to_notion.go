@@ -7,7 +7,7 @@ import (
 )
 
 // ToDOM function type
-type ToNotionBlock = func(NodeOrMark) *notion.Block
+type ToNotionBlock = func(*Node) *notion.Block
 
 type NotionSerializer struct {
 	// The node serialization functions.
@@ -121,7 +121,7 @@ func defaultHeadingDOMGenerator() ToDOM {
 */
 
 func defaultNotionGenerator(blocktype notion.BlockType, attrs []string) ToNotionBlock {
-	return func(n NodeOrMark) *notion.Block {
+	return func(n *Node) *notion.Block {
 		//htmlAttrs := n.GetAttrs(attrs)
 		return &notion.Block{
 			Type: blocktype,
@@ -131,6 +131,59 @@ func defaultNotionGenerator(blocktype notion.BlockType, attrs []string) ToNotion
 			//Attr:     htmlAttrs,
 		}
 	}
+}
+
+func defaultParagraphBlockGenerator() ToNotionBlock {
+	return func(n *Node) *notion.Block {
+		return &notion.Block{
+			Type:      notion.BlockTypeParagraph,
+			Paragraph: createParagraphBlock(n),
+			//Type:     html.ElementNode,
+			//DataAtom: atom,
+			//Data:     atom.String(),
+			//Attr:     htmlAttrs,
+		}
+	}
+}
+
+func createParagraphBlock(n *Node) *notion.RichTextBlock {
+	result := &notion.RichTextBlock{
+		Text: []notion.RichText{},
+	}
+	n.ForEach(func(node *Node, offset, index int) {
+		text := ""
+		annotations := &notion.Annotations{}
+		hasAnnotation := false
+		if node.Type.Name == "text" {
+			text = text + *node.Text
+		}
+		if node.Type.Name == "hard_break" {
+			text = text + "/n"
+		}
+		for _, m := range node.Marks {
+			if m.Type.Name == "em" {
+				annotations.Bold = true
+				hasAnnotation = true
+			}
+			if m.Type.Name == "strong" {
+				annotations.Bold = true
+				hasAnnotation = true
+			}
+
+		}
+		nextRichText := &notion.RichText{
+			Type:      notion.RichTextTypeText,
+			PlainText: text,
+			Text: &notion.Text{
+				Content: text,
+			},
+		}
+		if hasAnnotation {
+			nextRichText.Annotations = annotations
+		}
+		result.Text = append(result.Text, *nextRichText)
+	})
+	return result
 }
 
 // Build a serializer using the properties in a schema's node and
@@ -145,7 +198,7 @@ func NotionSerializerFromSchema(schema *Schema) *NotionSerializer {
 // Default ToDOM functions
 var (
 	defaultToNotion = map[string]ToNotionBlock{
-		"paragraph": defaultNotionGenerator(notion.BlockTypeParagraph, nil),
+		"paragraph": defaultParagraphBlockGenerator(),
 		//"blockquote":      defaultNotionGenerator(atom.Blockquote, nil),
 		//"horizontal_rule": defaultNotionGenerator(atom.Hr, nil),
 		//"image":           defaultNotionGenerator(atom.Img, []string{"src"}),
@@ -195,65 +248,30 @@ func (n *NotionSerializer) hasMark(markName string) bool {
 }
 
 // Serialize the content of this fragment to HTML.
-func (n *NotionSerializer) SerializeFragment(fragment *Fragment, options interface{}, target *notion.Block) *notion.Block {
-	if target == nil {
-		target = &notion.Block{
-			Object: "block",
-			//Type: html.DocumentNode,
-			// TODO: add more
-		}
-	}
+func (n *NotionSerializer) SerializePage(fragment *Fragment) []notion.Block {
+
 	//type activeMark struct {
 	//mark *Mark
 	//top  *html.Node
 	//}
-	//var active []activeMark
-	top := target
+	var result []notion.Block
 	fragment.ForEach(func(node *Node, offset, index int) {
 
 		fmt.Printf("  Node name: %s\n", node.Type.Name)
 		for key, val := range node.Attrs {
 			fmt.Printf("  Node attributes: %s:%s\n", key, val)
 		}
-		/*
-			if active != nil || len(node.Marks) > 0 {
-				keep, rendered := 0, 0
-				for keep < len(active) && rendered < len(node.Marks) {
-					next := node.Marks[rendered]
-					if !n.hasMark(next.Type.Name) {
-						rendered++
-						continue
-					}
-					if !next.Eq(active[keep].mark) || (next.Type.Spec.Spanning != nil && !*next.Type.Spec.Spanning) {
-						break
-					}
-					keep++
-					rendered++
-				}
-				for keep < len(active) {
-					n := len(active)
-					top, active = active[n-1].top, active[:n-1]
-				}
-				for rendered < len(node.Marks) {
-					add := node.Marks[rendered]
-					rendered++
-					markDOM := d.serializeMark(add, node.IsInline())
-					if markDOM != nil {
-						active = append(active, activeMark{mark: add, top: top})
-						top.AppendChild(markDOM)
-						top = markDOM
-					}
-				}
-
-			}
-		*/
-		child := n.SerializeNode(node)
-		if child != nil {
-			//top.AppendChild(child)
-			top.HasChildren = true
+		nextBlock := n.SerializeNode(node)
+		if nextBlock != nil {
+			result = append(result, *nextBlock)
 		}
+
+		//if child != nil {
+		//top.AppendChild(child)
+		//top.HasChildren = true
+		//}
 	})
-	return target
+	return result
 }
 
 //func (n *NotionSerializer) serializeMark(mark *Mark, inline bool) *html.Node {
@@ -271,11 +289,14 @@ func (n *NotionSerializer) SerializeNode(node *Node) *notion.Block {
 	if notionFn != nil {
 		fmt.Printf("  Type of node: %s\n", node.Type.Name)
 		topNode := notionFn(node)
-		contentNode := topNode
+		//contentNode := topNode
+		//node.ForEach(func(node *Node, offset, index int) {
+		//contentNode.HasChildren = true
+		//})
 		//for contentNode.LastChild != nil {
 		//	contentNode = contentNode.LastChild
 		//}
-		n.SerializeFragment(node.Content, nil, contentNode)
+		//n.SerializeFragment(node.Content, nil, contentNode)
 		return topNode
 	}
 	return nil
@@ -287,8 +308,7 @@ func notionNodesFromSchema(schema *Schema) (result map[string]ToNotionBlock) {
 		result[n.Name] = n.Spec.ToNotion
 	}
 	if textToNotion, ok := result["text"]; ok && textToNotion == nil {
-		result["text"] = func(n NodeOrMark) *notion.Block {
-			node, _ := n.(*Node)
+		result["text"] = func(node *Node) *notion.Block {
 			return &notion.Block{
 				Type: notion.BlockTypeParagraph,
 				Paragraph: &notion.RichTextBlock{
