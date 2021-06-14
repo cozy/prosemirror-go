@@ -17,6 +17,13 @@ type NotionSerializer struct {
 	Marks map[string]ToNotionBlock
 }
 
+func CreatePageContent(node *Node, schema *Schema) []notion.Block {
+	s := AddDefaultToNotion(schema)
+	serializer := NotionSerializerFromSchema(s)
+	output := serializer.SerializePage(node.Content)
+	return output
+}
+
 /*
 type NodeOrMark interface {
 	GetAttrs([]string) []html.Attribute
