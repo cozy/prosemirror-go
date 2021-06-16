@@ -7,7 +7,7 @@ import (
 )
 
 // ToDOM function type
-type ToNotionBlock = func(*Node) *notion.Block
+type ToNotionBlock = func(*Node) []*notion.Block
 
 type NotionSerializer struct {
 	// The node serialization functions.
@@ -17,7 +17,7 @@ type NotionSerializer struct {
 	Marks map[string]ToNotionBlock
 }
 
-func CreatePageContent(node *Node, schema *Schema) []notion.Block {
+func CreatePageContent(node *Node, schema *Schema) []*notion.Block {
 	s := AddDefaultToNotion(schema)
 	serializer := NotionSerializerFromSchema(s)
 	output := serializer.SerializePage(node.Content)
@@ -125,33 +125,6 @@ func defaultHeadingDOMGenerator() ToDOM {
 }
 
 
-*/
-
-func defaultNotionGenerator(blocktype notion.BlockType, attrs []string) ToNotionBlock {
-	return func(n *Node) *notion.Block {
-		//htmlAttrs := n.GetAttrs(attrs)
-		return &notion.Block{
-			Type: blocktype,
-			//Type:     html.ElementNode,
-			//DataAtom: atom,
-			//Data:     atom.String(),
-			//Attr:     htmlAttrs,
-		}
-	}
-}
-
-func defaultParagraphBlockGenerator() ToNotionBlock {
-	return func(n *Node) *notion.Block {
-		return &notion.Block{
-			Type:      notion.BlockTypeParagraph,
-			Paragraph: createParagraphBlock(n),
-			//Type:     html.ElementNode,
-			//DataAtom: atom,
-			//Data:     atom.String(),
-			//Attr:     htmlAttrs,
-		}
-	}
-}
 
 func createParagraphBlock(n *Node) *notion.RichTextBlock {
 	result := &notion.RichTextBlock{
@@ -193,6 +166,8 @@ func createParagraphBlock(n *Node) *notion.RichTextBlock {
 	return result
 }
 
+*/
+
 // Build a serializer using the properties in a schema's node and
 // mark specs.
 func NotionSerializerFromSchema(schema *Schema) *NotionSerializer {
@@ -205,7 +180,7 @@ func NotionSerializerFromSchema(schema *Schema) *NotionSerializer {
 // Default ToDOM functions
 var (
 	defaultToNotion = map[string]ToNotionBlock{
-		"paragraph": defaultParagraphBlockGenerator(),
+		//"paragraph": defaultParagraphBlockGenerator(),
 		//"blockquote":      defaultNotionGenerator(atom.Blockquote, nil),
 		//"horizontal_rule": defaultNotionGenerator(atom.Hr, nil),
 		//"image":           defaultNotionGenerator(atom.Img, []string{"src"}),
@@ -255,13 +230,13 @@ func (n *NotionSerializer) hasMark(markName string) bool {
 }
 
 // Serialize the content of this fragment to HTML.
-func (n *NotionSerializer) SerializePage(fragment *Fragment) []notion.Block {
+func (n *NotionSerializer) SerializePage(fragment *Fragment) []*notion.Block {
 
 	//type activeMark struct {
 	//mark *Mark
 	//top  *html.Node
 	//}
-	var result []notion.Block
+	var result []*notion.Block
 	fragment.ForEach(func(node *Node, offset, index int) {
 
 		fmt.Printf("  Node name: %s\n", node.Type.Name)
@@ -270,7 +245,7 @@ func (n *NotionSerializer) SerializePage(fragment *Fragment) []notion.Block {
 		}
 		nextBlock := n.SerializeNode(node)
 		if nextBlock != nil {
-			result = append(result, *nextBlock)
+			result = append(result, nextBlock...)
 		}
 
 		//if child != nil {
@@ -291,7 +266,7 @@ func (n *NotionSerializer) SerializePage(fragment *Fragment) []notion.Block {
 // Serialize this node to a DOM node. This can be useful when you
 // need to serialize a part of a document, as opposed to the whole
 // document. To serialize a whole document, use serializeFragment()
-func (n *NotionSerializer) SerializeNode(node *Node) *notion.Block {
+func (n *NotionSerializer) SerializeNode(node *Node) []*notion.Block {
 	notionFn := n.Nodes[node.Type.Name]
 	if notionFn != nil {
 		fmt.Printf("  Type of node: %s\n", node.Type.Name)
@@ -314,20 +289,22 @@ func notionNodesFromSchema(schema *Schema) (result map[string]ToNotionBlock) {
 	for _, n := range schema.Nodes {
 		result[n.Name] = n.Spec.ToNotion
 	}
-	if textToNotion, ok := result["text"]; ok && textToNotion == nil {
-		result["text"] = func(node *Node) *notion.Block {
-			return &notion.Block{
-				Type: notion.BlockTypeParagraph,
-				Paragraph: &notion.RichTextBlock{
-					Text: []notion.RichText{
-						notion.RichText{
-							PlainText: *node.Text,
+	/*
+		if textToNotion, ok := result["text"]; ok && textToNotion == nil {
+			result["text"] = func(node *Node) *notion.Block {
+				return &notion.Block{
+					Type: notion.BlockTypeParagraph,
+					Paragraph: &notion.RichTextBlock{
+						Text: []notion.RichText{
+							notion.RichText{
+								PlainText: *node.Text,
+							},
 						},
 					},
-				},
+				}
 			}
 		}
-	}
+	*/
 	return result
 }
 
