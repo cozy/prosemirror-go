@@ -43,11 +43,12 @@ func addAttr(key string, value interface{}, attrs []html.Attribute) []html.Attri
 	if attrInt, ok := value.(int); ok {
 		newAttr.Val = strconv.Itoa(attrInt)
 		return append(attrs, newAttr)
-	} else {
-		if attrString, ok := value.(string); ok {
-			newAttr.Val = attrString
-			return append(attrs, newAttr)
-		}
+	} else if attrString, ok := value.(string); ok {
+		newAttr.Val = attrString
+		return append(attrs, newAttr)
+	} else if attrBool, ok := value.(bool); ok {
+		newAttr.Val = strconv.FormatBool(attrBool)
+		return append(attrs, newAttr)
 	}
 	return attrs
 }
@@ -248,7 +249,7 @@ func (d *DOMSerializer) SerializeFragment(fragment *Fragment, options interface{
 			}
 
 		}
-		child := d.serializeNode(node)
+		child := d.SerializeNode(node)
 		if child != nil {
 			top.AppendChild(child)
 		}
@@ -266,14 +267,14 @@ func (d *DOMSerializer) serializeMark(mark *Mark, inline bool) *html.Node {
 // Serialize this node to a DOM node. This can be useful when you
 // need to serialize a part of a document, as opposed to the whole
 // document. To serialize a whole document, use serializeFragment()
-func (d *DOMSerializer) serializeNode(node *Node) *html.Node {
+func (d *DOMSerializer) SerializeNode(node *Node) *html.Node {
 	domFn := d.Nodes[node.Type.Name]
 	if domFn != nil {
 		fmt.Printf("  Type of node: %s\n", node.Type.Name)
 		topNode := domFn(node)
 		contentNode := topNode
-		for contentNode.FirstChild != nil {
-			contentNode = contentNode.FirstChild
+		for contentNode.LastChild != nil {
+			contentNode = contentNode.LastChild
 		}
 		d.SerializeFragment(node.Content, nil, contentNode)
 		return topNode

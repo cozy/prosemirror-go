@@ -612,6 +612,9 @@ type NodeSpec struct {
 
 	// Defines how the node is rendered in HTML
 	ToDOM ToDOM `json:"-"`
+
+	// Defines how the node is rendered in Notion
+	ToNotion ToNotionBlock `json:"-"`
 }
 
 // MarkSpec is an object describing a mark type.
