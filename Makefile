@@ -17,7 +17,7 @@ lint: bin/golangci-lint
 .PHONY: lint
 
 bin/golangci-lint: Makefile
-	@curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.41.0
+	@curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.42.0
 
 ## clean: clean the generated files and directories
 clean:
