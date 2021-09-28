@@ -69,7 +69,7 @@ func (s *ReplaceStep) Map(mapping Mappable) Step {
 // Merge is a method of the Step interface.
 func (s *ReplaceStep) Merge(other Step) (Step, bool) {
 	repl, ok := other.(*ReplaceStep)
-	if !ok || repl.Structure != s.Structure {
+	if !ok || repl.Structure || s.Structure {
 		return nil, false
 	}
 	if s.From+s.Slice.Size() == repl.From && s.Slice.OpenStart == 0 && repl.Slice.OpenEnd == 0 {
