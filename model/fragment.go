@@ -66,6 +66,8 @@ func (f *Fragment) NodesBetween(from, to int, fn NBCallback, nodeStart int, pare
 	return nil
 }
 
+// textBetween extracts the text between `from` and `to`. See the same method
+// on [`Node`](#model.Node.textBetween).
 func (f *Fragment) textBetween(from, to int, args ...string) string {
 	blockSeparator := ""
 	if len(args) > 0 {
