@@ -58,7 +58,7 @@ func (s *AddMarkStep) Apply(doc *model.Node) StepResult {
 	}
 	parent := dFrom.Node(dFrom.SharedDepth(s.To))
 	fragment, err := mapFragment(oldSlice.Content, func(node, parent *model.Node) *model.Node {
-		if !parent.Type.AllowsMarkType(s.Mark.Type) {
+		if !node.IsAtom() || !parent.Type.AllowsMarkType(s.Mark.Type) {
 			return node
 		}
 		return node.Mark(s.Mark.AddToSet(node.Marks))

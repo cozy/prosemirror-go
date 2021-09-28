@@ -107,6 +107,12 @@ func (nt *NodeType) IsLeaf() bool {
 	return nt.ContentMatch == EmptyContentMatch
 }
 
+// IsAtom returns true when this node is an atom, i.e. when it does not have
+// directly editable content.
+func (nt *NodeType) IsAtom() bool {
+	return nt.IsLeaf() || nt.Spec.Atom
+}
+
 // HasRequiredAttrs tells you whether this node type has any required
 // attributes.
 func (nt *NodeType) HasRequiredAttrs() bool {
@@ -602,6 +608,11 @@ type NodeSpec struct {
 
 	// Should be set to true for inline nodes. (Implied for text nodes.)
 	Inline bool `json:"inline,omitempty"`
+
+	// Can be set to true to indicate that, though this isn't a [leaf
+	// node](#model.NodeType.isLeaf), it doesn't have directly editable
+	// content and should be treated as a single unit in the view.
+	Atom bool `json:"atom,omitempty"`
 
 	// The attributes that nodes of this type get.
 	Attrs map[string]*AttributeSpec `json:"attrs,omitempty"`

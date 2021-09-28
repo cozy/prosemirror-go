@@ -319,6 +319,15 @@ func (n *Node) IsLeaf() bool {
 	return n.Type.IsLeaf()
 }
 
+// IsAtom returns true when this is an atom, i.e. when it does not have
+// directly editable content. This is usually the same as `isLeaf`, but can be
+// configured with the [`atom` property](#model.NodeSpec.atom) on a node's spec
+// (typically used when the node is displayed as an uneditable [node
+// view](#view.NodeView)).
+func (n *Node) IsAtom() bool {
+	return n.Type.IsAtom()
+}
+
 // String returns a string representation of this node for debugging purposes.
 func (n *Node) String() string {
 	if n.Type.Spec.ToDebugString != nil {
