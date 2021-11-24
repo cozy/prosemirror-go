@@ -850,7 +850,7 @@ func (s *Schema) MarkType(name string) (*MarkType, error) {
 	if found, ok := findMarkType(s.Marks, name); ok {
 		return found, nil
 	}
-	return nil, fmt.Errorf("Unknown node type: %s", name)
+	return nil, fmt.Errorf("Unknown mark type: %s", name)
 }
 
 func gatherMarks(schema *Schema, marks []string) ([]*MarkType, error) {
