@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	"strconv"
 
 	"golang.org/x/net/html"
@@ -215,10 +214,6 @@ func (d *DOMSerializer) SerializeFragment(fragment *Fragment, options interface{
 	top := target
 	fragment.ForEach(func(node *Node, offset, index int) {
 
-		fmt.Printf("  Node name: %s\n", node.Type.Name)
-		for key, val := range node.Attrs {
-			fmt.Printf("  Node attributes: %s:%s\n", key, val)
-		}
 		if active != nil || len(node.Marks) > 0 {
 			keep, rendered := 0, 0
 			for keep < len(active) && rendered < len(node.Marks) {
@@ -270,7 +265,6 @@ func (d *DOMSerializer) serializeMark(mark *Mark, inline bool) *html.Node {
 func (d *DOMSerializer) SerializeNode(node *Node) *html.Node {
 	domFn := d.Nodes[node.Type.Name]
 	if domFn != nil {
-		fmt.Printf("  Type of node: %s\n", node.Type.Name)
 		topNode := domFn(node)
 		contentNode := topNode
 		for contentNode.LastChild != nil {
