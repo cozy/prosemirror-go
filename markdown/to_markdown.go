@@ -38,8 +38,8 @@ type Serializer struct {
 // state and a mark, and returns a string. `open` and `close` can also be
 // functions, which will be called as
 //
-//     (state: MarkdownSerializerState, mark: Mark, parent: Fragment, index:
-//     number) → string
+//	(state: MarkdownSerializerState, mark: Mark, parent: Fragment, index:
+//	number) → string
 //
 // Where `parent` and `index` allow you to inspect the mark's context to see
 // which nodes it applies to.
@@ -47,7 +47,7 @@ type Serializer struct {
 // Mark information objects can also have a `mixable` property which, when
 // `true`, indicates that the order in which the mark's opening and closing
 // syntax appears relative to other mixable marks can be varied. (For example,
-// you can say `**a *b***` and `*a **b***`, but not `` `a *b*` ``.)
+// you can say `**a *b***` and `*a **b***`, but not “ `a *b*` “.)
 //
 // To disable character escaping in a mark, you can give it an `escape`
 // property of `false`. Such a mark has to have the highest precedence (must
@@ -278,10 +278,11 @@ type SerializerState struct {
 // NewSerializerState is the constructor for NewSerializerState.
 //
 // Options are the options passed to the serializer.
-//   tightLists:: ?bool
-//   Whether to render lists in a tight style. This can be overridden
-//   on a node level by specifying a tight attribute on the node.
-//   Defaults to false.
+//
+//	tightLists:: ?bool
+//	Whether to render lists in a tight style. This can be overridden
+//	on a node level by specifying a tight attribute on the node.
+//	Defaults to false.
 func NewSerializerState(
 	nodes map[string]NodeSerializerFunc,
 	marks map[string]MarkSerializerSpec,
