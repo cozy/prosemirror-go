@@ -193,6 +193,10 @@ func TestMarkdown(t *testing.T) {
 	same("Foo < img> bar",
 		doc(p("Foo < img> bar")))
 
+	// escapes special characters
+	same("Foo \\*bar",
+		doc(p("Foo *bar")))
+
 	// doesn't accidentally generate list markup
 	same("1\\. foo",
 		doc(p("1. foo")))

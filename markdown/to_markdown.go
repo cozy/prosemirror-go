@@ -592,8 +592,8 @@ func (s *SerializerState) RenderList(node *model.Node, delim string, firstDelim 
 }
 
 var (
-	escRegexp1 = regexp.MustCompile("[`*\\\\~\\[\\]]")
-	escRegexp2 = regexp.MustCompile(`^[:#\-*+>]`)
+	escRegexp1 = regexp.MustCompile("([`*\\\\~\\[\\]])")
+	escRegexp2 = regexp.MustCompile(`^([:#\-*+>])`)
 	escRegexp3 = regexp.MustCompile(`(\s*\d+)\.`)
 )
 
@@ -605,9 +605,9 @@ func (s *SerializerState) Esc(str string, startOfLine ...bool) string {
 	if len(startOfLine) > 0 {
 		start = startOfLine[0]
 	}
-	str = escRegexp1.ReplaceAllString(str, "\\$&")
+	str = escRegexp1.ReplaceAllString(str, "\\$1")
 	if start {
-		str = escRegexp2.ReplaceAllString(str, "\\$&")
+		str = escRegexp2.ReplaceAllString(str, "\\$1")
 		str = escRegexp3.ReplaceAllString(str, "$1\\.")
 	}
 	return str
