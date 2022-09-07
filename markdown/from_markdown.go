@@ -324,9 +324,21 @@ var DefaultNodeMapper = NodeMapper{
 	// Inlines
 	ast.KindText: func(state *MarkdownParseState, node ast.Node, entering bool) error {
 		if entering {
-			segment := node.(*ast.Text).Segment
-			content := segment.Value(state.Source)
+			n := node.(*ast.Text)
+			content := n.Segment.Value(state.Source)
 			state.AddText(string(content))
+			if n.HardLineBreak() {
+				typ, err := state.Schema.NodeType("hardBreak")
+				if err != nil {
+					typ, err = state.Schema.NodeType("hard_break")
+					if err != nil {
+						return err
+					}
+				}
+				if _, err := state.AddNode(typ, nil, nil); err != nil {
+					return err
+				}
+			}
 		}
 		return nil
 	},

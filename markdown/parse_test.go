@@ -181,9 +181,9 @@ func TestMarkdown(t *testing.T) {
 	// same("Here's an image: ![x](img.png)",
 	// 	doc(p("Here's an image: ", img)))
 
-	// TODO parses a line break
-	// same("line one\\\nline two",
-	// 	doc(p("line one", br, "line two")))
+	// parses a line break
+	same("line one\\\nline two",
+		doc(p("line one", br, "line two")))
 
 	// TODO parses a horizontal rule
 	// same("one two\n\n---\n\nthree",
