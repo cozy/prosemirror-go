@@ -239,7 +239,33 @@ var DefaultNodeMapper = NodeMapper{
 		if entering {
 			typ, err := state.Schema.NodeType(nodeType)
 			if err != nil {
+				nodeType = strings.Replace(nodeType, "L", "_l", 1)
+				typ, err = state.Schema.NodeType(nodeType)
+				if err != nil {
+					return err
+				}
+			}
+			var attrs map[string]interface{}
+			if node.(*ast.List).IsOrdered() {
+				order := float64(node.(*ast.List).Start)
+				attrs = map[string]interface{}{"order": order}
+			}
+			state.OpenNode(typ, attrs)
+		} else {
+			if _, err := state.CloseNode(); err != nil {
 				return err
+			}
+		}
+		return nil
+	},
+	ast.KindListItem: func(state *MarkdownParseState, node ast.Node, entering bool) error {
+		if entering {
+			typ, err := state.Schema.NodeType("listItem")
+			if err != nil {
+				typ, err = state.Schema.NodeType("list_item")
+				if err != nil {
+					return err
+				}
 			}
 			state.OpenNode(typ, nil)
 		} else {
@@ -249,7 +275,6 @@ var DefaultNodeMapper = NodeMapper{
 		}
 		return nil
 	},
-	ast.KindListItem:   GenericBlockHandler("listItem"),
 	ast.KindTextBlock:  GenericBlockHandler("paragraph"),
 	ast.KindBlockquote: GenericBlockHandler("blockquote"),
 	ast.KindCodeBlock: func(state *MarkdownParseState, node ast.Node, entering bool) error {
@@ -257,7 +282,10 @@ var DefaultNodeMapper = NodeMapper{
 			node := node.(*ast.CodeBlock)
 			typ, err := state.Schema.NodeType("codeBlock")
 			if err != nil {
-				return err
+				typ, err = state.Schema.NodeType("code_block")
+				if err != nil {
+					return err
+				}
 			}
 			state.OpenNode(typ, nil)
 			state.AddText(WithoutTrailingNewline(node, state.Source))
@@ -273,7 +301,10 @@ var DefaultNodeMapper = NodeMapper{
 			node := node.(*ast.FencedCodeBlock)
 			typ, err := state.Schema.NodeType("codeBlock")
 			if err != nil {
-				return err
+				typ, err = state.Schema.NodeType("code_block")
+				if err != nil {
+					return err
+				}
 			}
 			lang := node.Language(state.Source)
 			attrs := map[string]interface{}{
@@ -330,8 +361,10 @@ var DefaultNodeMapper = NodeMapper{
 		}
 		n := node.(*ast.Link)
 		attrs := map[string]interface{}{
-			"href":  string(n.Destination),
-			"title": string(n.Title),
+			"href": string(n.Destination),
+		}
+		if title := string(n.Title); len(title) > 0 {
+			attrs[title] = title
 		}
 		mark := typ.Create(attrs)
 		if entering {
