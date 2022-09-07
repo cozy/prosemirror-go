@@ -326,7 +326,9 @@ var DefaultNodeMapper = NodeMapper{
 		if entering {
 			n := node.(*ast.Text)
 			content := n.Segment.Value(state.Source)
-			state.AddText(string(content))
+			if len(content) > 0 {
+				state.AddText(string(content))
+			}
 			if n.HardLineBreak() {
 				typ, err := state.Schema.NodeType("hardBreak")
 				if err != nil {

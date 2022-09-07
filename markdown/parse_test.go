@@ -221,4 +221,8 @@ func TestMarkdown(t *testing.T) {
 
 	// doesn't escape characters in code
 	same("foo`*`", doc(p("foo", code("*"))))
+
+	// doesn't create an empty text
+	same("**foo**\\\nbar",
+		doc(p(strong("foo"), br, "bar")))
 }
