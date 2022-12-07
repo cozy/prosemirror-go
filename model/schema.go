@@ -18,7 +18,7 @@ func defaultAttrs(attrs map[string]*Attribute) map[string]interface{} {
 		if !attr.HasDefault {
 			return nil
 		}
-		defaults[name] = attr
+		defaults[name] = attr.Default
 	}
 	return defaults
 }
