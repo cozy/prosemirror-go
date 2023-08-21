@@ -160,20 +160,22 @@ var DefaultSerializer = NewSerializer(map[string]NodeSerializerFunc{
 		}
 	},
 	"text": func(state *SerializerState, node, _parent *model.Node, _index int) {
-		state.Text(*node.Text)
+		state.Text(*node.Text, !state.IsAutoLink)
 	},
 }, map[string]MarkSerializerSpec{
 	"em":     {Open: "*", Close: "*", Mixable: true, ExpelEnclosingWhitespace: true},
 	"strong": {Open: "**", Close: "**", Mixable: true, ExpelEnclosingWhitespace: true},
 	"link": {
-		Open: func(_state *SerializerState, mark *model.Mark, parent *model.Node, index int) string {
-			if isPlainURL(mark, parent, index, 1) {
+		Open: func(state *SerializerState, mark *model.Mark, parent *model.Node, index int) string {
+			state.IsAutoLink = isPlainURL(mark, parent, index, 1)
+			if state.IsAutoLink {
 				return "<"
 			}
 			return "["
 		},
 		Close: func(state *SerializerState, mark *model.Mark, parent *model.Node, index int) string {
-			if isPlainURL(mark, parent, index, -1) {
+			if state.IsAutoLink {
+				state.IsAutoLink = false
 				return ">"
 			}
 			href, _ := mark.Attrs["href"].(string)
@@ -271,6 +273,7 @@ type SerializerState struct {
 	Delim       string
 	Out         string
 	Closed      *model.Node
+	IsAutoLink  bool
 	InTightList bool
 	tightLists  bool
 }

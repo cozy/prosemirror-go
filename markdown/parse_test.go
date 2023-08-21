@@ -242,6 +242,14 @@ func TestMarkdown(t *testing.T) {
 	// escapes underscores surrounded by non-word characters
 	same("/\\_abc\\_)", doc(p("/_abc_)")))
 
+	// ensure no escapes in url
+	parse("[text](https://example.com/_file/#~anchor)",
+		doc(p(a(map[string]interface{}{"href": "https://example.com/_file/#~anchor"}, "text"))))
+
+	// ensure no escapes in autolinks
+	same("<https://example.com/_file/#~anchor>",
+		doc(p(a(map[string]interface{}{"href": "https://example.com/_file/#~anchor"}, "https://example.com/_file/#~anchor"))))
+
 	// doesn't create an empty text
 	same("**foo**\\\nbar",
 		doc(p(strong("foo"), br, "bar")))
