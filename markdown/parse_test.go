@@ -250,6 +250,10 @@ func TestMarkdown(t *testing.T) {
 	same("<https://example.com/_file/#~anchor>",
 		doc(p(a(map[string]interface{}{"href": "https://example.com/_file/#~anchor"}, "https://example.com/_file/#~anchor"))))
 
+	// escapes list markers inside lists
+	same("* 1\\. hi\n\n* x",
+		doc(ul(li(p("1. hi")), li(p("x")))))
+
 	// doesn't create an empty text
 	same("**foo**\\\nbar",
 		doc(p(strong("foo"), br, "bar")))

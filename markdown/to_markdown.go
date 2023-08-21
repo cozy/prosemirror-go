@@ -257,14 +257,15 @@ func isPlainURL(link *model.Mark, parent *model.Node, index int) bool {
 // to markdown serialization. Instances are passed to node and mark
 // serialization methods (see `toMarkdown`).
 type SerializerState struct {
-	Nodes       map[string]NodeSerializerFunc
-	Marks       map[string]MarkSerializerSpec
-	Delim       string
-	Out         string
-	Closed      *model.Node
-	InAutoLink  bool
-	InTightList bool
-	tightLists  bool
+	Nodes        map[string]NodeSerializerFunc
+	Marks        map[string]MarkSerializerSpec
+	Delim        string
+	Out          string
+	Closed       *model.Node
+	InAutoLink   bool
+	AtBlockStart bool
+	InTightList  bool
+	tightLists   bool
 }
 
 // NewSerializerState is the constructor for NewSerializerState.
@@ -370,10 +371,9 @@ func (s *SerializerState) Text(text string, escape ...bool) {
 		esc = escape[0]
 	}
 	for i, line := range lines {
-		startOfLine := s.atBlank() || s.Closed != nil
 		s.Write()
 		if esc {
-			s.Out += s.Esc(line, startOfLine)
+			s.Out += s.Esc(line, s.AtBlockStart)
 		} else {
 			s.Out += line
 		}
@@ -401,6 +401,7 @@ var inlineRegexp = regexp.MustCompile(`^(\s*)(.*?)(\s*)$`)
 
 // RenderInline renders the contents of `parent` as inline content.
 func (s *SerializerState) RenderInline(parent *model.Node) {
+	s.AtBlockStart = true
 	var active []*model.Mark
 	var trailing string
 
@@ -554,6 +555,7 @@ func (s *SerializerState) RenderInline(parent *model.Node) {
 
 	parent.ForEach(progress)
 	progress(nil, 0, parent.ChildCount())
+	s.AtBlockStart = false
 }
 
 // RenderList renders a node's content as a list. `delim` should be the extra
