@@ -276,6 +276,14 @@ func TestMarkdown(t *testing.T) {
 	// code block fence adjusts to content
 	same("````\n```\ncode\n```\n````", doc(pre("```\ncode\n```")))
 
+	// parses a code block ends with empty line
+	originalText := "1\n"
+	attrs := map[string]interface{}{"params": ""}
+	content := []*model.Node{schema.Text(originalText)}
+	mdText := DefaultSerializer.Serialize(
+		doc(schema.Node("code_block", attrs, content)).Node)
+	same(mdText, doc(schema.Node("code_block", attrs, content)))
+
 	// doesn't create an empty text
 	same("**foo**\\\nbar",
 		doc(p(strong("foo"), br, "bar")))

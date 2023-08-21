@@ -110,7 +110,8 @@ var DefaultSerializer = NewSerializer(map[string]NodeSerializerFunc{
 		params, _ := node.Attrs["params"].(string)
 		state.Write(fence + params + "\n")
 		state.Text(content, false)
-		state.EnsureNewLine()
+		// Add a newline to the current content before adding closing marker
+		state.Write("\n")
 		state.Write(fence)
 		state.CloseBlock(node)
 	},
@@ -392,7 +393,7 @@ func (s *SerializerState) Text(text string, escape ...bool) {
 	for i, line := range lines {
 		s.Write()
 		// Escape exclamation marks in front of links
-		if !esc && line[0] == '[' && textRegexp1.MatchString(s.Out) {
+		if !esc && len(line) > 0 && line[0] == '[' && textRegexp1.MatchString(s.Out) {
 			s.Out = s.Out[:len(s.Out)-1] + "\\!"
 		}
 		if esc {
