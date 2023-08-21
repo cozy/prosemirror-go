@@ -160,22 +160,22 @@ var DefaultSerializer = NewSerializer(map[string]NodeSerializerFunc{
 		}
 	},
 	"text": func(state *SerializerState, node, _parent *model.Node, _index int) {
-		state.Text(*node.Text, !state.IsAutoLink)
+		state.Text(*node.Text, !state.InAutoLink)
 	},
 }, map[string]MarkSerializerSpec{
 	"em":     {Open: "*", Close: "*", Mixable: true, ExpelEnclosingWhitespace: true},
 	"strong": {Open: "**", Close: "**", Mixable: true, ExpelEnclosingWhitespace: true},
 	"link": {
 		Open: func(state *SerializerState, mark *model.Mark, parent *model.Node, index int) string {
-			state.IsAutoLink = isPlainURL(mark, parent, index, 1)
-			if state.IsAutoLink {
+			state.InAutoLink = isPlainURL(mark, parent, index)
+			if state.InAutoLink {
 				return "<"
 			}
 			return "["
 		},
 		Close: func(state *SerializerState, mark *model.Mark, parent *model.Node, index int) string {
-			if state.IsAutoLink {
-				state.IsAutoLink = false
+			if state.InAutoLink {
+				state.InAutoLink = false
 				return ">"
 			}
 			href, _ := mark.Attrs["href"].(string)
@@ -228,7 +228,7 @@ func backticksFor(node *model.Node, side int) string {
 	return result
 }
 
-func isPlainURL(link *model.Mark, parent *model.Node, index, side int) bool {
+func isPlainURL(link *model.Mark, parent *model.Node, index int) bool {
 	if _, ok := link.Attrs["title"].(string); ok {
 		return false
 	}
@@ -236,28 +236,17 @@ func isPlainURL(link *model.Mark, parent *model.Node, index, side int) bool {
 	if !strings.Contains(href, ":") {
 		return false
 	}
-	x := 0
-	if side < 0 {
-		x = -1
-	}
-	content, err := parent.Child(index + x)
+	content, err := parent.Child(index)
 	if err != nil {
 		return true
 	}
 	if !content.IsText() || *content.Text != href || content.Marks[len(content.Marks)-1] != link {
 		return false
 	}
-	if side < 0 && index == 1 {
+	if index == parent.ChildCount()-1 {
 		return true
 	}
-	if side >= 0 && index == parent.ChildCount()-1 {
-		return true
-	}
-	x = 1
-	if side < 0 {
-		x = -2
-	}
-	next, err := parent.Child(index + x)
+	next, err := parent.Child(index + 1)
 	if err != nil {
 		return true
 	}
@@ -273,7 +262,7 @@ type SerializerState struct {
 	Delim       string
 	Out         string
 	Closed      *model.Node
-	IsAutoLink  bool
+	InAutoLink  bool
 	InTightList bool
 	tightLists  bool
 }
