@@ -273,6 +273,9 @@ func TestMarkdown(t *testing.T) {
 	same("* 1\\. hi\n\n* x",
 		doc(ul(li(p("1. hi")), li(p("x")))))
 
+	// code block fence adjusts to content
+	same("````\n```\ncode\n```\n````", doc(pre("```\ncode\n```")))
+
 	// doesn't create an empty text
 	same("**foo**\\\nbar",
 		doc(p(strong("foo"), br, "bar")))

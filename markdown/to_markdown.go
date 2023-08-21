@@ -90,17 +90,28 @@ func getAttrInt(attrs map[string]interface{}, name string, defaultValue int) int
 	return value
 }
 
+var backticksRegexp = regexp.MustCompile("`{3,}")
+
 // DefaultSerializer is a serializer for the [basic schema](#schema).
 var DefaultSerializer = NewSerializer(map[string]NodeSerializerFunc{
 	"blockquote": func(state *SerializerState, node, _parent *model.Node, _index int) {
 		state.WrapBlock("> ", nil, node, func() { state.RenderContent(node) })
 	},
 	"code_block": func(state *SerializerState, node, _parent *model.Node, _index int) {
+		fence := "```"
+		content := node.TextContent()
+		matches := backticksRegexp.FindAllString(content, -1)
+		for _, backticks := range matches {
+			if len(backticks) >= len(fence) {
+				fence = backticks + "`"
+			}
+		}
+
 		params, _ := node.Attrs["params"].(string)
-		state.Write("```" + params + "\n")
-		state.Text(node.TextContent(), false)
+		state.Write(fence + params + "\n")
+		state.Text(content, false)
 		state.EnsureNewLine()
-		state.Write("```")
+		state.Write(fence)
 		state.CloseBlock(node)
 	},
 	"heading": func(state *SerializerState, node, _parent *model.Node, _index int) {
