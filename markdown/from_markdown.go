@@ -22,18 +22,17 @@ func maybeMerge(a, b *model.Node) *model.Node {
 // MarkdownParseState is an object used to track the context of a running
 // parse.
 type MarkdownParseState struct {
-	Source      []byte
-	Schema      *model.Schema
-	Root        *model.Node
-	Stack       []*StackItem
-	Marks       []*model.Mark
-	ParentMarks []*model.Mark
+	Source []byte
+	Schema *model.Schema
+	Root   *model.Node
+	Stack  []*StackItem
 }
 
 type StackItem struct {
 	Type    *model.NodeType
 	Attrs   map[string]interface{}
 	Content []*model.Node
+	Marks   []*model.Mark
 }
 
 type NodeMapper map[ast.NodeKind]NodeMapperFunc
@@ -66,35 +65,37 @@ func (state *MarkdownParseState) Pop() *StackItem {
 // AddText adds the given text to the current position in the document, using
 // the current marks as styling.
 func (state *MarkdownParseState) AddText(text string) {
-	item := state.Top()
-	node := state.Schema.Text(text, state.Marks)
-	if len(item.Content) > 0 {
-		last := item.Content[len(item.Content)-1]
+	top := state.Top()
+	node := state.Schema.Text(text, top.Marks)
+	if len(top.Content) > 0 {
+		last := top.Content[len(top.Content)-1]
 		if merged := maybeMerge(last, node); merged != nil {
-			item.Content[len(item.Content)-1] = merged
+			top.Content[len(top.Content)-1] = merged
 			return
 		}
 	}
-	item.Content = append(item.Content, node)
+	top.Content = append(top.Content, node)
 }
 
 // OpenMark adds the given mark to the set of active marks.
 func (state *MarkdownParseState) OpenMark(mark *model.Mark) {
-	state.Marks = mark.AddToSet(state.Marks)
+	top := state.Top()
+	top.Marks = mark.AddToSet(top.Marks)
 }
 
 // CloseMark removes the given mark from the set of active marks.
 func (state *MarkdownParseState) CloseMark(mark *model.Mark) {
-	state.Marks = mark.RemoveFromSet(state.Marks)
-}
-
-func (state *MarkdownParseState) AddParentMark(mark *model.Mark) {
-	state.ParentMarks = mark.AddToSet(state.ParentMarks)
+	top := state.Top()
+	top.Marks = mark.RemoveFromSet(top.Marks)
 }
 
 // AddNode adds a node at the current position.
 func (state *MarkdownParseState) AddNode(typ *model.NodeType, attrs map[string]interface{}, content interface{}) (*model.Node, error) {
-	node, err := typ.CreateAndFill(attrs, content, state.Marks)
+	marks := model.NoMarks
+	if top := state.Top(); top != nil {
+		marks = top.Marks
+	}
+	node, err := typ.CreateAndFill(attrs, content, marks)
 	if node == nil {
 		return nil, err
 	}
@@ -104,19 +105,12 @@ func (state *MarkdownParseState) AddNode(typ *model.NodeType, attrs map[string]i
 
 // OpenNode wraps subsequent content in a node of the given type.
 func (state *MarkdownParseState) OpenNode(typ *model.NodeType, attrs map[string]interface{}) {
-	item := &StackItem{Type: typ, Attrs: attrs}
+	item := &StackItem{Type: typ, Attrs: attrs, Marks: model.NoMarks}
 	state.Stack = append(state.Stack, item)
 }
 
 // CloseNode closes and returns the node that is currently on top of the stack.
 func (state *MarkdownParseState) CloseNode() (*model.Node, error) {
-	if len(state.ParentMarks) > 0 {
-		state.Marks = state.ParentMarks
-		state.ParentMarks = model.NoMarks
-		defer func() { state.Marks = model.NoMarks }()
-	} else if len(state.Marks) > 0 {
-		state.Marks = model.NoMarks
-	}
 	info := state.Pop()
 	return state.AddNode(info.Type, info.Attrs, info.Content)
 }
@@ -206,7 +200,7 @@ var DefaultNodeMapper = NodeMapper{
 			state.OpenNode(typ, nil)
 		} else {
 			info := state.Pop()
-			node, err := info.Type.CreateAndFill(info.Attrs, info.Content, state.Marks)
+			node, err := info.Type.CreateAndFill(info.Attrs, info.Content, model.NoMarks)
 			if err != nil {
 				return err
 			}
