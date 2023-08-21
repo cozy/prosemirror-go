@@ -149,6 +149,10 @@ func TestMarkdown(t *testing.T) {
 	same("**[link](foo) is bold**",
 		doc(p(strong(a("link"), " is bold"))))
 
+	// parses emphasis inside links
+	same("[link *foo **bar** `#`*](foo)",
+		doc(p(a("link ", em("foo ", strong("bar"), " ", code("#"))))))
+
 	// parses code mark inside strong text
 	same("**`code` is bold**",
 		doc(p(strong(code("code"), " is bold"))))

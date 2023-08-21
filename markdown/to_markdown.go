@@ -190,6 +190,7 @@ var DefaultSerializer = NewSerializer(map[string]NodeSerializerFunc{
 			}
 			return fmt.Sprintf("](%s%s)", href, title)
 		},
+		Mixable: true,
 	},
 	"code": {
 		Open: func(_state *SerializerState, _mark *model.Mark, parent *model.Node, index int) string {
@@ -455,8 +456,18 @@ func (s *SerializerState) RenderInline(parent *model.Node) {
 			expel := false
 			for _, mark := range marks {
 				if info, ok := s.Marks[mark.Type.Name]; ok && info.ExpelEnclosingWhitespace {
-					expel = true
-					break
+					if mark.IsInSet(active) {
+						continue
+					}
+					if index >= parent.ChildCount()-1 {
+						expel = true
+						break
+					}
+					other, err := parent.Child(index + 1)
+					if err == nil && !mark.IsInSet(other.Marks) {
+						expel = true
+						break
+					}
 				}
 			}
 			if expel {
