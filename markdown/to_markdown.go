@@ -592,7 +592,7 @@ func (s *SerializerState) RenderList(node *model.Node, delim string, firstDelim 
 }
 
 var (
-	escRegexp1 = regexp.MustCompile("([`*\\\\~\\[\\]])")
+	escRegexp1 = regexp.MustCompile("([`*\\\\~\\[\\]_])")
 	escRegexp2 = regexp.MustCompile(`^([:#\-*+>])`)
 	escRegexp3 = regexp.MustCompile(`(\s*\d+)\.`)
 )
