@@ -250,6 +250,10 @@ func TestMarkdown(t *testing.T) {
 	same("<https://example.com/_file/#~anchor>",
 		doc(p(a(map[string]interface{}{"href": "https://example.com/_file/#~anchor"}, "https://example.com/_file/#~anchor"))))
 
+	// escape ! in front of links
+	serialize(doc(p("!", a("text"))),
+		"\\![text](foo)")
+
 	// escapes list markers inside lists
 	same("* 1\\. hi\n\n* x",
 		doc(ul(li(p("1. hi")), li(p("x")))))

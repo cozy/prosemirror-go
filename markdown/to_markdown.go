@@ -362,6 +362,8 @@ func (s *SerializerState) CloseBlock(node *model.Node) {
 	s.Closed = node
 }
 
+var textRegexp1 = regexp.MustCompile(`(^|[^\\])\!$`)
+
 // Text adds the given text to the document. When escape is not `false`, it
 // will be escaped.
 func (s *SerializerState) Text(text string, escape ...bool) {
@@ -372,6 +374,10 @@ func (s *SerializerState) Text(text string, escape ...bool) {
 	}
 	for i, line := range lines {
 		s.Write()
+		// Escape exclamation marks in front of links
+		if !esc && line[0] == '[' && textRegexp1.MatchString(s.Out) {
+			s.Out = s.Out[:len(s.Out)-1] + "\\!"
+		}
 		if esc {
 			s.Out += s.Esc(line, s.AtBlockStart)
 		} else {
