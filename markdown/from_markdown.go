@@ -378,7 +378,7 @@ var DefaultNodeMapper = NodeMapper{
 			"href": string(n.Destination),
 		}
 		if title := string(n.Title); len(title) > 0 {
-			attrs[title] = title
+			attrs["title"] = strings.ReplaceAll(title, `\"`, `"`)
 		}
 		mark := typ.Create(attrs)
 		if entering {

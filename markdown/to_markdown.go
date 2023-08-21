@@ -145,7 +145,7 @@ var DefaultSerializer = NewSerializer(map[string]NodeSerializerFunc{
 		src, _ := node.Attrs["src"].(string)
 		title := ""
 		if t, ok := node.Attrs["title"].(string); ok {
-			title = state.Quote(t)
+			title = ` "` + strings.ReplaceAll(t, `"`, `\"`) + `"`
 		}
 		state.Write(fmt.Sprintf("![%s](%s)%s", state.Esc(alt), state.Esc(src), title))
 	},
@@ -179,9 +179,9 @@ var DefaultSerializer = NewSerializer(map[string]NodeSerializerFunc{
 			href, _ := mark.Attrs["href"].(string)
 			title, _ := mark.Attrs["title"].(string)
 			if title != "" {
-				title = " " + state.Quote(title)
+				title = ` "` + strings.ReplaceAll(title, `"`, `\"`) + `"`
 			}
-			return fmt.Sprintf("](%s%s)", state.Esc(href), title)
+			return fmt.Sprintf("](%s%s)", href, title)
 		},
 	},
 	"code": {
