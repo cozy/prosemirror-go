@@ -161,6 +161,10 @@ func TestMarkdown(t *testing.T) {
 	serialize(doc(p("Three spaces: ", code("   "))),
 		"Three spaces: `   `")
 
+	// parses hard breaks
+	same("foo\\\nbar", doc(p("foo", br(), "bar")))
+	same("*foo\\\nbar*", doc(p(em("foo", br(), "bar"))))
+
 	// parses links
 	same("My [link](foo) goes to foo",
 		doc(p("My ", a("link"), " goes to foo")))
