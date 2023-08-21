@@ -218,7 +218,7 @@ func TestMarkdown(t *testing.T) {
 		doc(p("1. foo")))
 
 	// doesn't fail with line break inside inline mark
-	same("**text1\ntext2**", doc(p(strong("text1\ntext2"))))
+	serialize(doc(p(strong("text1\ntext2"))), "**text1\ntext2**")
 
 	// drops trailing hard breaks
 	serialize(doc(p("a", br, br)), "a")
