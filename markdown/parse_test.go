@@ -230,6 +230,18 @@ func TestMarkdown(t *testing.T) {
 	// doesn't escape characters in code
 	same("foo`*`", doc(p("foo", code("*"))))
 
+	// doesn't escape underscores between word characters
+	same("abc_def", doc(p("abc_def")))
+
+	// doesn't escape strips of underscores between word characters
+	same("abc___def", doc(p("abc___def")))
+
+	// escapes underscores at word boundaries
+	same("\\_abc\\_", doc(p("_abc_")))
+
+	// escapes underscores surrounded by non-word characters
+	same("/\\_abc\\_)", doc(p("/_abc_)")))
+
 	// doesn't create an empty text
 	same("**foo**\\\nbar",
 		doc(p(strong("foo"), br, "bar")))

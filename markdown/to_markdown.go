@@ -592,9 +592,10 @@ func (s *SerializerState) RenderList(node *model.Node, delim string, firstDelim 
 }
 
 var (
-	escRegexp1 = regexp.MustCompile("([`*\\\\~\\[\\]_])")
-	escRegexp2 = regexp.MustCompile(`^([:#\-*+>])`)
-	escRegexp3 = regexp.MustCompile(`(\s*\d+)\.`)
+	escRegexp1 = regexp.MustCompile("([`*\\\\~\\[\\]])")
+	escRegexp2 = regexp.MustCompile(`(\b_)|(_\b)`)
+	escRegexp3 = regexp.MustCompile(`^([:#\-*+>])`)
+	escRegexp4 = regexp.MustCompile(`(\s*\d+)\.`)
 )
 
 // Esc escapes the given string so that it can safely appear in Markdown
@@ -606,9 +607,10 @@ func (s *SerializerState) Esc(str string, startOfLine ...bool) string {
 		start = startOfLine[0]
 	}
 	str = escRegexp1.ReplaceAllString(str, "\\$1")
+	str = escRegexp2.ReplaceAllString(str, "\\_")
 	if start {
-		str = escRegexp2.ReplaceAllString(str, "\\$1")
-		str = escRegexp3.ReplaceAllString(str, "$1\\.")
+		str = escRegexp3.ReplaceAllString(str, "\\$1")
+		str = escRegexp4.ReplaceAllString(str, "$1\\.")
 	}
 	return str
 }
