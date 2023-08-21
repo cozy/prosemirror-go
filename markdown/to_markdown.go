@@ -143,11 +143,13 @@ var DefaultSerializer = NewSerializer(map[string]NodeSerializerFunc{
 	"image": func(state *SerializerState, node, _parent *model.Node, _index int) {
 		alt, _ := node.Attrs["alt"].(string)
 		src, _ := node.Attrs["src"].(string)
+		src = strings.ReplaceAll(src, "(", "\\(")
+		src = strings.ReplaceAll(src, ")", "\\)")
 		title := ""
 		if t, ok := node.Attrs["title"].(string); ok {
 			title = ` "` + strings.ReplaceAll(t, `"`, `\"`) + `"`
 		}
-		state.Write(fmt.Sprintf("![%s](%s)%s", state.Esc(alt), state.Esc(src), title))
+		state.Write(fmt.Sprintf("![%s](%s)%s", state.Esc(alt), src, title))
 	},
 	"hard_break": func(state *SerializerState, node, parent *model.Node, index int) {
 		for i := index; i < parent.ChildCount(); i++ {
@@ -179,6 +181,9 @@ var DefaultSerializer = NewSerializer(map[string]NodeSerializerFunc{
 				return ">"
 			}
 			href, _ := mark.Attrs["href"].(string)
+			href = strings.ReplaceAll(href, "(", "\\(")
+			href = strings.ReplaceAll(href, ")", "\\)")
+			href = strings.ReplaceAll(href, `"`, `\"`)
 			title, _ := mark.Attrs["title"].(string)
 			if title != "" {
 				title = ` "` + strings.ReplaceAll(title, `"`, `\"`) + `"`

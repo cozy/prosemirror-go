@@ -72,8 +72,8 @@ var (
 	em     = out["em"].(builder.MarkBuilder)
 	strong = out["strong"].(builder.MarkBuilder)
 	code   = out["code"].(builder.MarkBuilder)
-	// img        = out["img"].(builder.NodeBuilder)
-	link = out["link"].(builder.MarkBuilder)
+	img    = out["img"].(builder.NodeBuilder)
+	link   = out["link"].(builder.MarkBuilder)
 )
 
 func TestMarkdown(t *testing.T) {
@@ -253,6 +253,13 @@ func TestMarkdown(t *testing.T) {
 	// escape ! in front of links
 	serialize(doc(p("!", a("text"))),
 		"\\![text](foo)")
+
+	// escape of URL in links and images
+	serialize(doc(p(a(map[string]interface{}{"href": "foo):"}, "link"))), "[link](foo\\):)")
+	serialize(doc(p(a(map[string]interface{}{"href": "(foo"}, "link"))), "[link](\\(foo)")
+	serialize(doc(p(img(map[string]interface{}{"src": "foo):"}))), "![x](foo\\):)")
+	serialize(doc(p(img(map[string]interface{}{"src": "(foo"}))), "![x](\\(foo)")
+	serialize(doc(p(a(map[string]interface{}{"title": "bar", "href": "foo%20\""}, "link"))), "[link](foo%20\\\" \"bar\")")
 
 	// escapes list markers inside lists
 	same("* 1\\. hi\n\n* x",
