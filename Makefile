@@ -13,11 +13,11 @@ tests:
 
 ## lint: enforce a consistent code style and detect code smells
 lint: bin/golangci-lint
-	@bin/golangci-lint run -E gofmt -E unconvert -E misspell -E whitespace -E exportloopref -E bidichk
+	@bin/golangci-lint run -E gofmt -E unconvert -E misspell -E whitespace -E bidichk
 .PHONY: lint
 
 bin/golangci-lint: Makefile
-	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- v1.60.1
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- v1.61.0
 
 ## clean: clean the generated files and directories
 clean:
