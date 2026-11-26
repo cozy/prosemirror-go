@@ -279,6 +279,9 @@ func isPlainURL(link *model.Mark, parent *model.Node, index int) bool {
 // SerializerState is an object used to track state and expose methods related
 // to markdown serialization. Instances are passed to node and mark
 // serialization methods (see `toMarkdown`).
+//
+// Do not copy a SerializerState after the first write: the copy shares its
+// output buffer.
 type SerializerState struct {
 	Nodes        map[string]NodeSerializerFunc
 	Marks        map[string]MarkSerializerSpec
