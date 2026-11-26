@@ -4,12 +4,12 @@ jobs:
   test:
     runs-on: ubuntu-22.04
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Install Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.23.x'
-      - name: Checkout code
-        uses: actions/checkout@v4
       - name: Lint
         run: make lint
       - name: Unit tests
