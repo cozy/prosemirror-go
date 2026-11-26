@@ -1,12 +1,14 @@
 package model_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
 	. "github.com/cozy/prosemirror-go/model"
 	"github.com/cozy/prosemirror-go/test/builder"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func get(t *testing.T, expr string) *ContentMatch {
@@ -227,4 +229,43 @@ func TestContentMatchFillBefore(t *testing.T) {
 
 	// refuses to complete an overflown count across two bounds
 	fill3(t, "paragraph{2}", doc(p()), doc(p()), doc(p()), nil)
+}
+
+func TestParseContentMatchTooComplex(t *testing.T) {
+	for _, expr := range []string{
+		"paragraph{100000000}",
+		"paragraph{0,100000000}",
+		"(paragraph{1000}){1000}",
+		"(paragraph | heading)* paragraph (paragraph | heading){30}",     // 2^30 DFA states
+		strings.Repeat("(", 30) + "paragraph" + strings.Repeat(")+", 30), // 2^30 compilations
+		strings.Repeat("(", 1000) + "paragraph" + strings.Repeat(")", 1000),
+		"paragraph" + strings.Repeat("{0,}", 1000), // a deep tree without parens
+	} {
+		_, err := ParseContentMatch(expr, schema.Nodes)
+		assert.Error(t, err, "%.80s", expr)
+	}
+
+	// An oversized expression is rejected before tokenizing, with a short error.
+	_, err := ParseContentMatch(strings.Repeat("paragraph ", 100000), schema.Nodes)
+	assert.EqualError(t, err, "Content expression is too complex")
+
+	// A cycle of single null edges used to overflow the stack.
+	valid(t, "(paragraph{0} paragraph{0})*", "")
+}
+
+func TestParseContentMatchGroupExpansion(t *testing.T) {
+	nodes := []*NodeSpec{{Key: "doc", Content: "n0"}, {Key: "text"}}
+	for i := 0; i < 400; i++ {
+		nodes = append(nodes, &NodeSpec{Key: fmt.Sprintf("n%d", i), Group: "g"})
+	}
+	s, err := NewSchema(&SchemaSpec{Nodes: nodes})
+	require.NoError(t, err)
+
+	// Each reference used to allocate a node per member of the group.
+	expr := strings.Repeat("g ", 1000)
+	allocs := testing.AllocsPerRun(1, func() {
+		_, err := ParseContentMatch(expr, s.Nodes)
+		assert.Error(t, err)
+	})
+	assert.Less(t, allocs, 10000.0)
 }

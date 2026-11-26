@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"sort"
@@ -28,6 +29,9 @@ func NewContentMatch(validEnd bool) *ContentMatch {
 
 // ParseContentMatch builds a ContentMatch from a string expression.
 func ParseContentMatch(str string, nodeTypes []*NodeType) (*ContentMatch, error) {
+	if len(str) > maxExprLength {
+		return nil, errTooComplex
+	}
 	stream := newTokenStream(str, nodeTypes)
 	if stream.next() == nil {
 		return EmptyContentMatch, nil
@@ -39,7 +43,14 @@ func ParseContentMatch(str string, nodeTypes []*NodeType) (*ContentMatch, error)
 	if stream.next() != nil {
 		return nil, stream.err("Unexpected trailing text")
 	}
-	match := dfa(nfa(expr))
+	states, err := nfa(expr)
+	if err != nil {
+		return nil, stream.err("%s", err)
+	}
+	match, err := dfa(states)
+	if err != nil {
+		return nil, stream.err("%s", err)
+	}
 	if err := checkForDeadEnds(match, stream); err != nil {
 		return nil, err
 	}
@@ -107,30 +118,29 @@ func (cm *ContentMatch) compatible(other *ContentMatch) bool {
 // inserted). When toEnd is true, only return a fragment if the resulting match
 // goes to the end of the content expression.
 func (cm *ContentMatch) FillBefore(after *Fragment, toEnd ...bool) *Fragment {
-	end := false
-	if len(toEnd) > 0 {
-		end = toEnd[0]
-	}
+	budget := maxFillNodes
+	// An error means that no content can be generated, which is reported as nil.
+	frag, _ := cm.fillBefore(&budget, after, len(toEnd) > 0 && toEnd[0])
+	return frag
+}
+
+func (cm *ContentMatch) fillBefore(budget *int, after *Fragment, end bool) (*Fragment, error) {
 	startIndex := 0
 	seen := []*ContentMatch{cm}
 
-	var search func(match *ContentMatch, types []*NodeType) *Fragment
-	search = func(match *ContentMatch, types []*NodeType) *Fragment {
+	var search func(match *ContentMatch, types []*NodeType) (*Fragment, error)
+	search = func(match *ContentMatch, types []*NodeType) (*Fragment, error) {
 		finished := match.MatchFragment(after, startIndex)
 		if finished != nil && (!end || finished.ValidEnd) {
 			created := make([]*Node, len(types))
 			for i, typ := range types {
 				var err error
-				created[i], err = typ.CreateAndFill()
+				created[i], err = typ.createAndFill(budget)
 				if err != nil {
-					panic(err)
+					return nil, err
 				}
 			}
-			frag, err := FragmentFrom(created)
-			if err != nil {
-				panic(err)
-			}
-			return frag
+			return FragmentFrom(created)
 		}
 
 		for i := 0; i < len(match.next); i += 2 {
@@ -141,13 +151,13 @@ func (cm *ContentMatch) FillBefore(after *Fragment, toEnd ...bool) *Fragment {
 				concat := make([]*NodeType, len(types), len(types)+1)
 				copy(concat, types)
 				concat = append(concat, typ)
-				found := search(next, concat)
-				if found != nil {
-					return found
+				found, err := search(next, concat)
+				if found != nil || err != nil {
+					return found, err
 				}
 			}
 		}
-		return nil
+		return nil, nil
 	}
 
 	return search(cm, nil)
@@ -162,6 +172,8 @@ type tokenStream struct {
 	inline    *bool
 	pos       int
 	tokens    []string
+	depth     int
+	size      int // node types referenced, groups expanded
 }
 
 var splitter = regexp.MustCompile(`\w+|\S`)
@@ -245,7 +257,10 @@ func parseExprSubscript(stream *tokenStream) (*exprType, error) {
 	if err != nil {
 		return nil, err
 	}
-	for {
+	for wraps := 0; ; wraps++ {
+		if wraps > maxNesting {
+			return nil, stream.err("%s", errTooComplex)
+		}
 		if stream.eat("+") {
 			expr = &exprType{Type: "plus", Expr: expr}
 		} else if stream.eat("*") {
@@ -336,7 +351,12 @@ func isWordCharacters(str string) bool {
 
 func parseExprAtom(stream *tokenStream) (*exprType, error) {
 	if stream.eat("(") {
+		stream.depth++
+		if stream.depth > maxNesting {
+			return nil, stream.err("%s", errTooComplex)
+		}
 		expr, err := parseExpr(stream)
+		stream.depth--
 		if err != nil {
 			return nil, err
 		}
@@ -356,6 +376,12 @@ func parseExprAtom(stream *tokenStream) (*exprType, error) {
 		types, err := resolveName(stream, *s)
 		if err != nil {
 			return nil, err
+		}
+		// Each reference to a group expands to all its types, before the NFA
+		// budget applies: bound them the same way.
+		stream.size += len(types)
+		if stream.size > maxNFASize {
+			return nil, stream.err("%s", errTooComplex)
 		}
 		for _, typ := range types {
 			inline := typ.IsInline()
@@ -391,6 +417,19 @@ type edgeType struct {
 
 type state []*edgeType
 
+// Schemas can come from clients, so the automata built from their content
+// expressions are bounded: without limits, a range like {100000000} or a
+// pattern with an exponential DFA exhausts the memory, the stack or the CPU.
+const (
+	maxNFASize   = 300 // states and edges, real expressions need about 30
+	maxDFAStates = 300
+	maxNesting   = 50 // parenthesized groups, and postfix operators on one atom
+	// Checked before tokenizing, and errors quote the expression.
+	maxExprLength = 10000 // bytes, real expressions are under 200
+)
+
+var errTooComplex = errors.New("Content expression is too complex")
+
 // Construct an NFA from an expression as returned by the parser. The
 // NFA is represented as an array of states, which are themselves
 // arrays of edges, which are `{term, to}` objects. The first state is
@@ -399,10 +438,16 @@ type state []*edgeType
 // Note that unlike typical NFAs, the edge ordering in this one is
 // significant, in that it is used to construct filler content when
 // necessary.
-func nfa(expr *exprType) []state {
+func nfa(expr *exprType) ([]state, error) {
 	nfa := []state{{}}
+	size := 1
+	full := func() bool { return size > maxNFASize }
 
 	node := func() int {
+		size++
+		if full() {
+			return 0 // the expression will be rejected, stop allocating
+		}
 		nfa = append(nfa, state{})
 		return len(nfa) - 1
 	}
@@ -415,8 +460,11 @@ func nfa(expr *exprType) []state {
 		if len(args) > 1 {
 			term, _ = args[1].(*NodeType)
 		}
+		size++
 		edge := &edgeType{term: term, to: to}
-		nfa[from] = append(nfa[from], edge)
+		if !full() {
+			nfa[from] = append(nfa[from], edge)
+		}
 		return edge
 	}
 	connect := func(edges state, to int) {
@@ -427,6 +475,11 @@ func nfa(expr *exprType) []state {
 
 	var compile func(expr *exprType, from int) state
 	compile = func(expr *exprType, from int) state {
+		// Stop as soon as the budget is spent: a nested "plus" compiles its
+		// expression twice, so the work doubles at each level.
+		if full() {
+			return nil
+		}
 		switch expr.Type {
 		case "choice":
 			var out state
@@ -457,7 +510,7 @@ func nfa(expr *exprType) []state {
 			return append(state{edge(from)}, compile(expr.Expr, from)...)
 		case "range":
 			cur := from
-			for i := 0; i < expr.Min; i++ {
+			for i := 0; i < expr.Min && !full(); i++ {
 				next := node()
 				connect(compile(expr.Expr, cur), next)
 				cur = next
@@ -465,7 +518,7 @@ func nfa(expr *exprType) []state {
 			if expr.Max == -1 {
 				connect(compile(expr.Expr, cur), cur)
 			} else {
-				for i := expr.Min; i < expr.Max; i++ {
+				for i := expr.Min; i < expr.Max && !full(); i++ {
 					next := node()
 					edge(cur, next)
 					connect(compile(expr.Expr, cur), next)
@@ -480,7 +533,10 @@ func nfa(expr *exprType) []state {
 	}
 
 	connect(compile(expr, 0), node())
-	return nfa
+	if full() {
+		return nil, errTooComplex
+	}
+	return nfa, nil
 }
 
 func indexOf(slice, item interface{}) int {
@@ -512,9 +568,15 @@ func indexOf(slice, item interface{}) int {
 // needless duplicated nodes.
 func nullFrom(nfa []state, node int) []int {
 	var result []int
+	visited := make([]bool, len(nfa))
 
 	var scan func(node int)
 	scan = func(node int) {
+		// Single null edges can form a cycle, e.g. (paragraph{0} paragraph{0})*
+		if visited[node] {
+			return
+		}
+		visited[node] = true
 		edges := nfa[node]
 		if len(edges) == 1 && edges[0].term == nil {
 			scan(edges[0].to)
@@ -522,10 +584,8 @@ func nullFrom(nfa []state, node int) []int {
 		}
 		result = append(result, node)
 		for i := range edges {
-			term := edges[i].term
-			to := edges[i].to
-			if term == nil && indexOf(result, to) == -1 {
-				scan(to)
+			if edges[i].term == nil {
+				scan(edges[i].to)
 			}
 		}
 	}
@@ -537,12 +597,20 @@ func nullFrom(nfa []state, node int) []int {
 
 // Compiles an NFA as produced by nfa into a DFA, modeled as a set of state
 // objects (ContentMatch instances) with transitions between them.
-func dfa(nfa []state) *ContentMatch {
+func dfa(nfa []state) (*ContentMatch, error) {
 	labeled := map[string]*ContentMatch{}
+	closures := make([][]int, len(nfa))
+	closure := func(node int) []int {
+		if closures[node] == nil {
+			closures[node] = nullFrom(nfa, node)
+		}
+		return closures[node]
+	}
 
 	var explore func(states []int) *ContentMatch
 	explore = func(states []int) *ContentMatch {
 		var out []interface{}
+		inSet := map[edgeType]bool{}
 		for _, node := range states {
 			for _, edge := range nfa[node] {
 				term := edge.term
@@ -555,13 +623,14 @@ func dfa(nfa []state) *ContentMatch {
 				if known > -1 {
 					set = out[known+1].([]int)
 				}
-				for _, node := range nullFrom(nfa, to) {
+				for _, node := range closure(to) {
 					if known == -1 {
 						set = []int{}
 						out = append(out, term, set)
 						known = len(out) - 2
 					}
-					if indexOf(set, node) == -1 {
+					if key := (edgeType{term: term, to: node}); !inSet[key] {
+						inSet[key] = true
 						set = append(set, node)
 						out[known+1] = set
 					}
@@ -570,7 +639,7 @@ func dfa(nfa []state) *ContentMatch {
 		}
 		state := NewContentMatch(indexOf(states, len(nfa)-1) > -1)
 		labeled[fmt.Sprintf("%v", states)] = state
-		for i := 0; i < len(out); i += 2 {
+		for i := 0; i < len(out) && len(labeled) <= maxDFAStates; i += 2 {
 			states = out[i+1].([]int)
 			sort.Slice(states, func(i, j int) bool { return states[i] > states[j] })
 			cm, ok := labeled[fmt.Sprintf("%v", states)]
@@ -582,7 +651,11 @@ func dfa(nfa []state) *ContentMatch {
 		return state
 	}
 
-	return explore(nullFrom(nfa, 0))
+	match := explore(closure(0))
+	if len(labeled) > maxDFAStates {
+		return nil, errTooComplex
+	}
+	return match, nil
 }
 
 func checkForDeadEnds(match *ContentMatch, stream *tokenStream) error {

@@ -2,6 +2,7 @@ package markdown
 
 import (
 	"fmt"
+	"math"
 	"regexp"
 	"strings"
 	"unicode"
@@ -77,15 +78,18 @@ func (s *Serializer) Serialize(content *model.Node, options ...map[string]interf
 	return state.Out
 }
 
-func getAttrInt(attrs map[string]interface{}, name string, defaultValue int) int {
+// getAttrInt returns an int64, as an int would overflow on 32-bit targets.
+func getAttrInt(attrs map[string]interface{}, name string, defaultValue int64) int64 {
 	value := defaultValue
 	switch v := attrs[name].(type) {
 	case int:
-		value = v
+		value = int64(v)
 	case float64:
-		value = int(v)
+		// Converting a float outside of the int64 range gives a different
+		// value on each architecture.
+		value = int64(min(max(v, math.MinInt64), math.Nextafter(math.MaxInt64, 0)))
 	case int64:
-		value = int(v)
+		value = v
 	}
 	return value
 }
@@ -116,7 +120,8 @@ var DefaultSerializer = NewSerializer(map[string]NodeSerializerFunc{
 		state.CloseBlock(node)
 	},
 	"heading": func(state *SerializerState, node, _parent *model.Node, _index int) {
-		level := getAttrInt(node.Attrs, "level", 1)
+		// The level comes from the document: keep it in the range of markdown.
+		level := int(min(max(getAttrInt(node.Attrs, "level", 1), 1), 6))
 		state.Write(strings.Repeat("#", level) + " ")
 		state.RenderInline(node)
 		state.CloseBlock(node)
@@ -138,11 +143,11 @@ var DefaultSerializer = NewSerializer(map[string]NodeSerializerFunc{
 	},
 	"ordered_list": func(state *SerializerState, node, _parent *model.Node, _index int) {
 		start := getAttrInt(node.Attrs, "order", 1)
-		maxW := len(fmt.Sprintf("%d", start+node.ChildCount()-1))
+		maxW := len(fmt.Sprintf("%d", start+int64(node.ChildCount())-1))
 		space := strings.Repeat(" ", maxW+2)
 		state.RenderList(node, space, func(i int) string {
-			nStr := fmt.Sprintf("%d", start+i)
-			return strings.Repeat(" ", maxW-len(nStr)) + nStr + ". "
+			nStr := fmt.Sprintf("%d", start+int64(i))
+			return strings.Repeat(" ", max(0, maxW-len(nStr))) + nStr + ". "
 		})
 	},
 	"list_item": func(state *SerializerState, node, _parent *model.Node, _index int) {
