@@ -48,15 +48,22 @@ func (state *MarkdownParseState) Push(node *model.Node) {
 // Pop removes and returns the item on top of the stack, with its adjacent
 // texts joined.
 func (state *MarkdownParseState) Pop() *StackItem {
+	item := state.pop()
+	if len(item.Content) > 1 {
+		item.Content = model.FragmentFromArray(item.Content).Content
+	}
+	return item
+}
+
+// pop leaves the texts as they are, for a caller that creates the node: the
+// node creation joins them, and joining twice computes the sizes twice.
+func (state *MarkdownParseState) pop() *StackItem {
 	if len(state.Stack) == 0 {
 		panic(errors.New("Empty stack"))
 	}
 	last := len(state.Stack) - 1
 	item := state.Stack[last]
 	state.Stack = state.Stack[:last]
-	if len(item.Content) > 1 {
-		item.Content = model.FragmentFromArray(item.Content).Content
-	}
 	return item
 }
 
@@ -102,7 +109,7 @@ func (state *MarkdownParseState) OpenNode(typ *model.NodeType, attrs map[string]
 
 // CloseNode closes and returns the node that is currently on top of the stack.
 func (state *MarkdownParseState) CloseNode() (*model.Node, error) {
-	info := state.Pop()
+	info := state.pop()
 	return state.AddNode(info.Type, info.Attrs, info.Content)
 }
 
@@ -190,7 +197,7 @@ var DefaultNodeMapper = NodeMapper{
 			}
 			state.OpenNode(typ, nil)
 		} else {
-			info := state.Pop()
+			info := state.pop()
 			node, err := info.Type.CreateAndFill(info.Attrs, info.Content, model.NoMarks)
 			if err != nil {
 				return err
