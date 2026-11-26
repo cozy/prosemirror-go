@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 // Fragment represents a node's collection of child nodes.
@@ -364,19 +365,31 @@ func FragmentFromArray(array []*Node) *Fragment {
 	}
 	var joined []*Node
 	size := 0
-	for i, node := range array {
+	for i := 0; i < len(array); {
+		node := array[i]
 		size += node.NodeSize()
-		if i > 0 && node.IsText() && array[i-1].SameMarkup(node) {
-			if len(joined) == 0 {
-				joined = array[0:i]
+		j := i + 1
+		for j < len(array) && array[j].IsText() && array[j-1].SameMarkup(array[j]) {
+			size += array[j].NodeSize()
+			j++
+		}
+		if j > i+1 {
+			if joined == nil {
+				joined = append(make([]*Node, 0, len(array)), array[:i]...)
 			}
-			was := joined[len(joined)-1].Text
-			joined[len(joined)-1] = node.WithText(*was + *node.Text)
-		} else if len(joined) > 0 {
+			// Join the run at once: joining pairwise copies the text once per node.
+			var text strings.Builder
+			for _, n := range array[i:j] {
+				text.WriteString(*n.Text)
+			}
+			node = node.WithText(text.String())
+		}
+		if joined != nil {
 			joined = append(joined, node)
 		}
+		i = j
 	}
-	if len(joined) == 0 {
+	if joined == nil {
 		joined = array
 	}
 	return NewFragment(joined, size)
