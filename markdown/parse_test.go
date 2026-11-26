@@ -294,6 +294,9 @@ func TestSerializeOutOfRangeAttrs(t *testing.T) {
 	heading, err := schema.Node("heading", map[string]interface{}{"level": 5e10}, []*model.Node{schema.Text("x")})
 	require.NoError(t, err)
 	assert.Equal(t, "###### x", DefaultSerializer.Serialize(doc(heading).Node))
+	heading, err = schema.Node("heading", map[string]interface{}{"level": 1e20}, []*model.Node{schema.Text("x")})
+	require.NoError(t, err)
+	assert.Equal(t, "###### x", DefaultSerializer.Serialize(doc(heading).Node))
 
 	// A negative order used to make strings.Repeat panic.
 	para, err := schema.Node("paragraph", nil, []*model.Node{schema.Text("x")})

@@ -169,6 +169,7 @@ type tokenStream struct {
 	inline    *bool
 	pos       int
 	tokens    []string
+	depth     int
 }
 
 var splitter = regexp.MustCompile(`\w+|\S`)
@@ -343,7 +344,12 @@ func isWordCharacters(str string) bool {
 
 func parseExprAtom(stream *tokenStream) (*exprType, error) {
 	if stream.eat("(") {
+		stream.depth++
+		if stream.depth > maxNesting {
+			return nil, stream.err("%s", errTooComplex)
+		}
 		expr, err := parseExpr(stream)
+		stream.depth--
 		if err != nil {
 			return nil, err
 		}
@@ -404,6 +410,7 @@ type state []*edgeType
 const (
 	maxNFASize   = 300 // states and edges, real expressions need about 30
 	maxDFAStates = 300
+	maxNesting   = 50 // parenthesized groups, the parser recurses into each
 )
 
 var errTooComplex = errors.New("Content expression is too complex")
@@ -448,6 +455,11 @@ func nfa(expr *exprType) ([]state, error) {
 
 	var compile func(expr *exprType, from int) state
 	compile = func(expr *exprType, from int) state {
+		// Stop as soon as the budget is spent: a nested "plus" compiles its
+		// expression twice, so the work doubles at each level.
+		if full() {
+			return nil
+		}
 		switch expr.Type {
 		case "choice":
 			var out state
@@ -536,22 +548,24 @@ func indexOf(slice, item interface{}) int {
 // needless duplicated nodes.
 func nullFrom(nfa []state, node int) []int {
 	var result []int
-	inResult := make([]bool, len(nfa))
+	visited := make([]bool, len(nfa))
 
 	var scan func(node int)
 	scan = func(node int) {
+		// Single null edges can form a cycle, e.g. (paragraph{0} paragraph{0})*
+		if visited[node] {
+			return
+		}
+		visited[node] = true
 		edges := nfa[node]
 		if len(edges) == 1 && edges[0].term == nil {
 			scan(edges[0].to)
 			return
 		}
 		result = append(result, node)
-		inResult[node] = true
 		for i := range edges {
-			term := edges[i].term
-			to := edges[i].to
-			if term == nil && !inResult[to] {
-				scan(to)
+			if edges[i].term == nil {
+				scan(edges[i].to)
 			}
 		}
 	}

@@ -234,9 +234,14 @@ func TestParseContentMatchTooComplex(t *testing.T) {
 		"paragraph{100000000}",
 		"paragraph{0,100000000}",
 		"(paragraph{1000}){1000}",
-		"(paragraph | heading)* paragraph (paragraph | heading){30}", // 2^30 DFA states
+		"(paragraph | heading)* paragraph (paragraph | heading){30}",     // 2^30 DFA states
+		strings.Repeat("(", 30) + "paragraph" + strings.Repeat(")+", 30), // 2^30 compilations
+		strings.Repeat("(", 1000000) + "paragraph" + strings.Repeat(")", 1000000),
 	} {
 		_, err := ParseContentMatch(expr, schema.Nodes)
-		assert.Error(t, err, expr)
+		assert.Error(t, err, "%.80s", expr)
 	}
+
+	// A cycle of single null edges used to overflow the stack.
+	valid(t, "(paragraph{0} paragraph{0})*", "")
 }
