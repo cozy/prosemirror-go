@@ -228,3 +228,15 @@ func TestContentMatchFillBefore(t *testing.T) {
 	// refuses to complete an overflown count across two bounds
 	fill3(t, "paragraph{2}", doc(p()), doc(p()), doc(p()), nil)
 }
+
+func TestParseContentMatchTooComplex(t *testing.T) {
+	for _, expr := range []string{
+		"paragraph{100000000}",
+		"paragraph{0,100000000}",
+		"(paragraph{1000}){1000}",
+		"(paragraph | heading)* paragraph (paragraph | heading){30}", // 2^30 DFA states
+	} {
+		_, err := ParseContentMatch(expr, schema.Nodes)
+		assert.Error(t, err, expr)
+	}
+}

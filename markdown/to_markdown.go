@@ -116,7 +116,8 @@ var DefaultSerializer = NewSerializer(map[string]NodeSerializerFunc{
 		state.CloseBlock(node)
 	},
 	"heading": func(state *SerializerState, node, _parent *model.Node, _index int) {
-		level := getAttrInt(node.Attrs, "level", 1)
+		// The level comes from the document: keep it in the range of markdown.
+		level := min(max(getAttrInt(node.Attrs, "level", 1), 1), 6)
 		state.Write(strings.Repeat("#", level) + " ")
 		state.RenderInline(node)
 		state.CloseBlock(node)
@@ -142,7 +143,7 @@ var DefaultSerializer = NewSerializer(map[string]NodeSerializerFunc{
 		space := strings.Repeat(" ", maxW+2)
 		state.RenderList(node, space, func(i int) string {
 			nStr := fmt.Sprintf("%d", start+i)
-			return strings.Repeat(" ", maxW-len(nStr)) + nStr + ". "
+			return strings.Repeat(" ", max(0, maxW-len(nStr))) + nStr + ". "
 		})
 	},
 	"list_item": func(state *SerializerState, node, _parent *model.Node, _index int) {

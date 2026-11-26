@@ -288,3 +288,22 @@ func TestMarkdown(t *testing.T) {
 	same("**foo**\\\nbar",
 		doc(p(strong("foo"), br, "bar")))
 }
+
+func TestSerializeOutOfRangeAttrs(t *testing.T) {
+	// A huge heading level used to allocate gigabytes in strings.Repeat.
+	heading, err := schema.Node("heading", map[string]interface{}{"level": 5e10}, []*model.Node{schema.Text("x")})
+	require.NoError(t, err)
+	assert.Equal(t, "###### x", DefaultSerializer.Serialize(doc(heading).Node))
+
+	// A negative order used to make strings.Repeat panic.
+	para, err := schema.Node("paragraph", nil, []*model.Node{schema.Text("x")})
+	require.NoError(t, err)
+	items := make([]*model.Node, 10)
+	for i := range items {
+		items[i], err = schema.Node("list_item", nil, []*model.Node{para})
+		require.NoError(t, err)
+	}
+	list, err := schema.Node("ordered_list", map[string]interface{}{"order": -5.0}, items)
+	require.NoError(t, err)
+	assert.NotPanics(t, func() { DefaultSerializer.Serialize(doc(list).Node) })
+}
