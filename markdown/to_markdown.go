@@ -2,7 +2,6 @@ package markdown
 
 import (
 	"fmt"
-	"math"
 	"regexp"
 	"strings"
 	"unicode"
@@ -84,8 +83,9 @@ func getAttrInt(attrs map[string]interface{}, name string, defaultValue int) int
 	case int:
 		value = v
 	case float64:
-		// An out-of-range float gives a different int on each architecture.
-		value = int(min(max(v, math.MinInt32), math.MaxInt32))
+		// An out-of-range float gives a different int on each architecture,
+		// and 2^53 is where float64 stops holding every integer anyway.
+		value = int(min(max(v, -1<<53), 1<<53))
 	case int64:
 		value = int(v)
 	}

@@ -309,4 +309,9 @@ func TestSerializeOutOfRangeAttrs(t *testing.T) {
 	list, err := schema.Node("ordered_list", map[string]interface{}{"order": -5.0}, items)
 	require.NoError(t, err)
 	assert.NotPanics(t, func() { DefaultSerializer.Serialize(doc(list).Node) })
+
+	// Clamping the heading level must not change the numbers of a list.
+	list, err = schema.Node("ordered_list", map[string]interface{}{"order": 3e9}, items[:1])
+	require.NoError(t, err)
+	assert.Equal(t, "3000000000. x", DefaultSerializer.Serialize(doc(list).Node))
 }

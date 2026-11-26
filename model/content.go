@@ -253,7 +253,10 @@ func parseExprSubscript(stream *tokenStream) (*exprType, error) {
 	if err != nil {
 		return nil, err
 	}
-	for {
+	for wraps := 0; ; wraps++ {
+		if wraps > maxNesting {
+			return nil, stream.err("%s", errTooComplex)
+		}
 		if stream.eat("+") {
 			expr = &exprType{Type: "plus", Expr: expr}
 		} else if stream.eat("*") {
@@ -410,7 +413,7 @@ type state []*edgeType
 const (
 	maxNFASize   = 300 // states and edges, real expressions need about 30
 	maxDFAStates = 300
-	maxNesting   = 50 // parenthesized groups, the parser recurses into each
+	maxNesting   = 50 // parenthesized groups, and postfix operators on one atom
 )
 
 var errTooComplex = errors.New("Content expression is too complex")
@@ -430,6 +433,9 @@ func nfa(expr *exprType) ([]state, error) {
 
 	node := func() int {
 		size++
+		if full() {
+			return 0 // the expression will be rejected, stop allocating
+		}
 		nfa = append(nfa, state{})
 		return len(nfa) - 1
 	}
@@ -444,7 +450,9 @@ func nfa(expr *exprType) ([]state, error) {
 		}
 		size++
 		edge := &edgeType{term: term, to: to}
-		nfa[from] = append(nfa[from], edge)
+		if !full() {
+			nfa[from] = append(nfa[from], edge)
+		}
 		return edge
 	}
 	connect := func(edges state, to int) {
