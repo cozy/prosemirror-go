@@ -1,7 +1,9 @@
 package markdown
 
 import (
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/cozy/prosemirror-go/model"
 	"github.com/cozy/prosemirror-go/schema/basic"
@@ -317,4 +319,23 @@ func TestSerializeOutOfRangeAttrs(t *testing.T) {
 	list, err = schema.Node("ordered_list", map[string]interface{}{"order": 0x1p54}, items[:1])
 	require.NoError(t, err)
 	assert.Equal(t, "18014398509481984. x", DefaultSerializer.Serialize(doc(list).Node))
+}
+
+func TestMarkdownLinearInLines(t *testing.T) {
+	// Each line used to copy all the text, or all the output, gathered before it.
+	start := time.Now()
+	source := strings.Repeat("aaaaaaaaa\n", 50000)
+	parsed, err := ParseMarkdown(goldmark.DefaultParser(), DefaultNodeMapper, []byte(source), schema)
+	require.NoError(t, err)
+	para, err := parsed.Child(0)
+	require.NoError(t, err)
+	assert.Equal(t, 1, para.ChildCount(), "the lines are merged into one text node")
+	assert.Equal(t, 9*50000, len(para.TextContent()))
+
+	// Lines that start with "[" also scanned the whole output with a regexp.
+	text := strings.Repeat("[a!\n", 50000)
+	code, err := schema.Node("code_block", nil, []*model.Node{schema.Text(text)})
+	require.NoError(t, err)
+	assert.Equal(t, "```\n"+text+"\n```", DefaultSerializer.Serialize(doc(code).Node))
+	assert.Less(t, time.Since(start), 2*time.Second)
 }

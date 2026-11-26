@@ -12,13 +12,6 @@ import (
 	"github.com/yuin/goldmark/text"
 )
 
-func maybeMerge(a, b *model.Node) *model.Node {
-	if a.IsText() && b.IsText() && model.SameMarkSet(a.Marks, b.Marks) {
-		return a.WithText(*a.Text + *b.Text)
-	}
-	return nil
-}
-
 // MarkdownParseState is an object used to track the context of a running
 // parse.
 type MarkdownParseState struct {
@@ -63,18 +56,11 @@ func (state *MarkdownParseState) Pop() *StackItem {
 }
 
 // AddText adds the given text to the current position in the document, using
-// the current marks as styling.
+// the current marks as styling. Adjacent texts with the same marks are joined
+// when the node is closed.
 func (state *MarkdownParseState) AddText(text string) {
 	top := state.Top()
-	node := state.Schema.Text(text, top.Marks)
-	if len(top.Content) > 0 {
-		last := top.Content[len(top.Content)-1]
-		if merged := maybeMerge(last, node); merged != nil {
-			top.Content[len(top.Content)-1] = merged
-			return
-		}
-	}
-	top.Content = append(top.Content, node)
+	top.Content = append(top.Content, state.Schema.Text(text, top.Marks))
 }
 
 // OpenMark adds the given mark to the set of active marks.

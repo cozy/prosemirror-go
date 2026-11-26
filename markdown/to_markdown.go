@@ -75,7 +75,7 @@ func (s *Serializer) Serialize(content *model.Node, options ...map[string]interf
 	}
 	state := NewSerializerState(s.Nodes, s.Marks, opts)
 	state.RenderContent(content)
-	return state.Out
+	return state.Out()
 }
 
 // getAttrInt returns an int64, as an int would overflow on 32-bit targets.
@@ -283,7 +283,7 @@ type SerializerState struct {
 	Nodes        map[string]NodeSerializerFunc
 	Marks        map[string]MarkSerializerSpec
 	Delim        string
-	Out          string
+	out          []byte
 	Closed       *model.Node
 	InAutoLink   bool
 	AtBlockStart bool
@@ -312,7 +312,6 @@ func NewSerializerState(
 		Nodes:       nodes,
 		Marks:       marks,
 		Delim:       "",
-		Out:         "",
 		Closed:      nil,
 		InTightList: false,
 		tightLists:  tight,
@@ -331,7 +330,7 @@ func (s *SerializerState) flushClose(size ...int) {
 	if siz > 1 {
 		delimMin := strings.TrimRightFunc(s.Delim, unicode.IsSpace)
 		for i := 1; i < siz; i++ {
-			s.Out += delimMin + "\n"
+			s.out = append(s.out, delimMin+"\n"...)
 		}
 	}
 	s.Closed = nil
@@ -354,16 +353,18 @@ func (s *SerializerState) WrapBlock(delim string, firstDelim *string, node *mode
 }
 
 func (s *SerializerState) atBlank() bool {
-	if len(s.Out) == 0 {
-		return true
-	}
-	return s.Out[len(s.Out)-1] == '\n'
+	return len(s.out) == 0 || s.out[len(s.out)-1] == '\n'
+}
+
+// Out returns the markdown written so far.
+func (s *SerializerState) Out() string {
+	return string(s.out)
 }
 
 // EnsureNewLine ensures the current content ends with a newline.
 func (s *SerializerState) EnsureNewLine() {
 	if !s.atBlank() {
-		s.Out += "\n"
+		s.out = append(s.out, '\n')
 	}
 }
 
@@ -373,10 +374,10 @@ func (s *SerializerState) EnsureNewLine() {
 func (s *SerializerState) Write(content ...string) {
 	s.flushClose()
 	if s.Delim != "" && s.atBlank() {
-		s.Out += s.Delim
+		s.out = append(s.out, s.Delim...)
 	}
 	if len(content) > 0 {
-		s.Out += content[0]
+		s.out = append(s.out, content[0]...)
 	}
 }
 
@@ -385,7 +386,13 @@ func (s *SerializerState) CloseBlock(node *model.Node) {
 	s.Closed = node
 }
 
-var textRegexp1 = regexp.MustCompile(`(^|[^\\])\!$`)
+// endsWithUnescapedBang tells if the output ends with a "!" that is not
+// escaped. It looks at the last two bytes only, as a scan of the whole output
+// for every line would be quadratic.
+func (s *SerializerState) endsWithUnescapedBang() bool {
+	n := len(s.out)
+	return n > 0 && s.out[n-1] == '!' && (n == 1 || s.out[n-2] != '\\')
+}
 
 // Text adds the given text to the document. When escape is not `false`, it
 // will be escaped.
@@ -398,16 +405,16 @@ func (s *SerializerState) Text(text string, escape ...bool) {
 	for i, line := range lines {
 		s.Write()
 		// Escape exclamation marks in front of links
-		if !esc && len(line) > 0 && line[0] == '[' && textRegexp1.MatchString(s.Out) {
-			s.Out = s.Out[:len(s.Out)-1] + "\\!"
+		if !esc && len(line) > 0 && line[0] == '[' && s.endsWithUnescapedBang() {
+			s.out = append(s.out[:len(s.out)-1], '\\', '!')
 		}
 		if esc {
-			s.Out += s.Esc(line, s.AtBlockStart)
+			s.out = append(s.out, s.Esc(line, s.AtBlockStart)...)
 		} else {
-			s.Out += line
+			s.out = append(s.out, line...)
 		}
 		if i != len(lines)-1 {
-			s.Out += "\n"
+			s.out = append(s.out, '\n')
 		}
 	}
 }
