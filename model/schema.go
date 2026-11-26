@@ -190,7 +190,9 @@ func (nt *NodeType) CreateChecked(args ...interface{}) (*Node, error) {
 // start or end of the given fragment to make it fit the node. If no fitting
 // wrapping can be found, return null. Note that, due to the fact that required
 // nodes can always be created, this will always succeed if you pass null or
-// Fragment.empty as content.
+// Fragment.empty as content, unless the schema requires more than 1000 nodes to
+// be generated (a cyclic or exponential content expression): CreateAndFill
+// then returns an error.
 //
 // :: (?Object, ?union<Fragment, Node, [Node]>, ?[Mark]) → ?Node
 func (nt *NodeType) CreateAndFill(args ...interface{}) (*Node, error) {

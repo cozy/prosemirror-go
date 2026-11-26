@@ -314,4 +314,7 @@ func TestSerializeOutOfRangeAttrs(t *testing.T) {
 	list, err = schema.Node("ordered_list", map[string]interface{}{"order": 3e9}, items[:1])
 	require.NoError(t, err)
 	assert.Equal(t, "3000000000. x", DefaultSerializer.Serialize(doc(list).Node))
+	list, err = schema.Node("ordered_list", map[string]interface{}{"order": 0x1p54}, items[:1])
+	require.NoError(t, err)
+	assert.Equal(t, "18014398509481984. x", DefaultSerializer.Serialize(doc(list).Node))
 }

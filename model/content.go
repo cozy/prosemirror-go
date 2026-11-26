@@ -29,6 +29,9 @@ func NewContentMatch(validEnd bool) *ContentMatch {
 
 // ParseContentMatch builds a ContentMatch from a string expression.
 func ParseContentMatch(str string, nodeTypes []*NodeType) (*ContentMatch, error) {
+	if len(str) > maxExprLength {
+		return nil, errTooComplex
+	}
 	stream := newTokenStream(str, nodeTypes)
 	if stream.next() == nil {
 		return EmptyContentMatch, nil
@@ -421,6 +424,8 @@ const (
 	maxNFASize   = 300 // states and edges, real expressions need about 30
 	maxDFAStates = 300
 	maxNesting   = 50 // parenthesized groups, and postfix operators on one atom
+	// Checked before tokenizing, and errors quote the expression.
+	maxExprLength = 10000 // bytes, real expressions are under 200
 )
 
 var errTooComplex = errors.New("Content expression is too complex")

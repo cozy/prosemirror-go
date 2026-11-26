@@ -245,6 +245,10 @@ func TestParseContentMatchTooComplex(t *testing.T) {
 		assert.Error(t, err, "%.80s", expr)
 	}
 
+	// An oversized expression is rejected before tokenizing, with a short error.
+	_, err := ParseContentMatch(strings.Repeat("paragraph ", 100000), schema.Nodes)
+	assert.EqualError(t, err, "Content expression is too complex")
+
 	// A cycle of single null edges used to overflow the stack.
 	valid(t, "(paragraph{0} paragraph{0})*", "")
 }
