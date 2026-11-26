@@ -170,6 +170,7 @@ type tokenStream struct {
 	pos       int
 	tokens    []string
 	depth     int
+	size      int // node types referenced, groups expanded
 }
 
 var splitter = regexp.MustCompile(`\w+|\S`)
@@ -372,6 +373,12 @@ func parseExprAtom(stream *tokenStream) (*exprType, error) {
 		types, err := resolveName(stream, *s)
 		if err != nil {
 			return nil, err
+		}
+		// Each reference to a group expands to all its types, before the NFA
+		// budget applies: bound them the same way.
+		stream.size += len(types)
+		if stream.size > maxNFASize {
+			return nil, stream.err("%s", errTooComplex)
 		}
 		for _, typ := range types {
 			inline := typ.IsInline()

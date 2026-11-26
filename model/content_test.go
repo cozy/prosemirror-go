@@ -1,12 +1,14 @@
 package model_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
 	. "github.com/cozy/prosemirror-go/model"
 	"github.com/cozy/prosemirror-go/test/builder"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func get(t *testing.T, expr string) *ContentMatch {
@@ -245,4 +247,21 @@ func TestParseContentMatchTooComplex(t *testing.T) {
 
 	// A cycle of single null edges used to overflow the stack.
 	valid(t, "(paragraph{0} paragraph{0})*", "")
+}
+
+func TestParseContentMatchGroupExpansion(t *testing.T) {
+	nodes := []*NodeSpec{{Key: "doc", Content: "n0"}, {Key: "text"}}
+	for i := 0; i < 400; i++ {
+		nodes = append(nodes, &NodeSpec{Key: fmt.Sprintf("n%d", i), Group: "g"})
+	}
+	s, err := NewSchema(&SchemaSpec{Nodes: nodes})
+	require.NoError(t, err)
+
+	// Each reference used to allocate a node per member of the group.
+	expr := strings.Repeat("g ", 1000)
+	allocs := testing.AllocsPerRun(1, func() {
+		_, err := ParseContentMatch(expr, s.Nodes)
+		assert.Error(t, err)
+	})
+	assert.Less(t, allocs, 10000.0)
 }

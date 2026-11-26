@@ -77,17 +77,18 @@ func (s *Serializer) Serialize(content *model.Node, options ...map[string]interf
 	return state.Out
 }
 
-func getAttrInt(attrs map[string]interface{}, name string, defaultValue int) int {
+// getAttrInt returns an int64, as an int would overflow on 32-bit targets.
+func getAttrInt(attrs map[string]interface{}, name string, defaultValue int64) int64 {
 	value := defaultValue
 	switch v := attrs[name].(type) {
 	case int:
-		value = v
+		value = int64(v)
 	case float64:
-		// An out-of-range float gives a different int on each architecture,
-		// and 2^53 is where float64 stops holding every integer anyway.
-		value = int(min(max(v, -1<<53), 1<<53))
+		// An out-of-range float conversion differs by architecture, and 2^53
+		// is where float64 stops holding every integer anyway.
+		value = int64(min(max(v, -1<<53), 1<<53))
 	case int64:
-		value = int(v)
+		value = v
 	}
 	return value
 }
@@ -119,7 +120,7 @@ var DefaultSerializer = NewSerializer(map[string]NodeSerializerFunc{
 	},
 	"heading": func(state *SerializerState, node, _parent *model.Node, _index int) {
 		// The level comes from the document: keep it in the range of markdown.
-		level := min(max(getAttrInt(node.Attrs, "level", 1), 1), 6)
+		level := int(min(max(getAttrInt(node.Attrs, "level", 1), 1), 6))
 		state.Write(strings.Repeat("#", level) + " ")
 		state.RenderInline(node)
 		state.CloseBlock(node)
@@ -141,10 +142,10 @@ var DefaultSerializer = NewSerializer(map[string]NodeSerializerFunc{
 	},
 	"ordered_list": func(state *SerializerState, node, _parent *model.Node, _index int) {
 		start := getAttrInt(node.Attrs, "order", 1)
-		maxW := len(fmt.Sprintf("%d", start+node.ChildCount()-1))
+		maxW := len(fmt.Sprintf("%d", start+int64(node.ChildCount())-1))
 		space := strings.Repeat(" ", maxW+2)
 		state.RenderList(node, space, func(i int) string {
-			nStr := fmt.Sprintf("%d", start+i)
+			nStr := fmt.Sprintf("%d", start+int64(i))
 			return strings.Repeat(" ", max(0, maxW-len(nStr))) + nStr + ". "
 		})
 	},
