@@ -45,6 +45,8 @@ func (state *MarkdownParseState) Push(node *model.Node) {
 	item.Content = append(item.Content, node)
 }
 
+// Pop removes and returns the item on top of the stack, with its adjacent
+// texts joined.
 func (state *MarkdownParseState) Pop() *StackItem {
 	if len(state.Stack) == 0 {
 		panic(errors.New("Empty stack"))
@@ -52,6 +54,9 @@ func (state *MarkdownParseState) Pop() *StackItem {
 	last := len(state.Stack) - 1
 	item := state.Stack[last]
 	state.Stack = state.Stack[:last]
+	if len(item.Content) > 1 {
+		item.Content = model.FragmentFromArray(item.Content).Content
+	}
 	return item
 }
 

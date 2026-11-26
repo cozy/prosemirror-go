@@ -375,7 +375,7 @@ func FragmentFromArray(array []*Node) *Fragment {
 		}
 		if j > i+1 {
 			if joined == nil {
-				joined = append(make([]*Node, 0, len(array)), array[:i]...)
+				joined = append(make([]*Node, 0, i+1), array[:i]...)
 			}
 			// Join the run at once: joining pairwise copies the text once per node.
 			var text strings.Builder

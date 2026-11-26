@@ -330,6 +330,7 @@ func TestMarkdownLinearInLines(t *testing.T) {
 	para, err := parsed.Child(0)
 	require.NoError(t, err)
 	assert.Equal(t, 1, para.ChildCount(), "the lines are merged into one text node")
+	assert.Less(t, cap(para.Content.Content), 10, "no slot is kept for each line")
 	assert.Equal(t, 9*50000, len(para.TextContent()))
 
 	// Lines that start with "[" also scanned the whole output with a regexp.
@@ -338,4 +339,18 @@ func TestMarkdownLinearInLines(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "```\n"+text+"\n```", DefaultSerializer.Serialize(doc(code).Node))
 	assert.Less(t, time.Since(start), 2*time.Second)
+}
+
+func TestPopJoinsTexts(t *testing.T) {
+	// Handlers read the content of a popped item (cozy-stack joins it for the
+	// alt text of an image): it must hold one text, not one per line.
+	typ, err := schema.NodeType("paragraph")
+	require.NoError(t, err)
+	state := &MarkdownParseState{Schema: schema}
+	state.OpenNode(typ, nil)
+	state.AddText("a")
+	state.AddText("b")
+	content := state.Pop().Content
+	require.Len(t, content, 1)
+	assert.Equal(t, "ab", *content[0].Text)
 }
